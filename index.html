@@ -12,8 +12,8 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◎</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- OCR Config - API Keys (GİZLİ - GitHub'a yüklenmez) -->
-<script src="ocr-config.js"></script>
+<!-- OCR Config - Opsiyonel (Kendi API key'lerinizi ekleyin) -->
+<script src="ocr-config.js" onerror="console.log('📝 ocr-config.js yok, fallback key kullanılıyor')"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -3862,12 +3862,20 @@ const Cam = {
   /* ---- OCR.space API ile okuma (TRIPLE KEY - 75,000/ay) ---- */
   get ocrApiKeys(){
     // OCR_CONFIG global değişkeninden al (ocr-config.js)
-    if(typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.apiKeys){
+    if(typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.apiKeys && OCR_CONFIG.apiKeys.length > 0){
       return OCR_CONFIG.apiKeys;
     }
-    // Fallback: Config yoksa hata ver
-    console.error('OCR_CONFIG bulunamadı! ocr-config.js dosyası yüklendi mi?');
-    return [];
+    
+    // GitHub Pages Fallback - ocr-config.js yoksa bu key'leri kullan
+    // ⚠️ KULLANICILAR: Kendi key'lerinizi ocr-config.js'ye ekleyin!
+    console.warn('⚠️ ocr-config.js bulunamadı, fallback key kullanılıyor');
+    console.warn('📝 Kendi API key\'lerinizi kullanmak için: cp ocr-config.example.js ocr-config.js');
+    
+    return [
+      'K81442206688957',  // Fallback Key 1
+      'K83546183188957',  // Fallback Key 2
+      'K83515335988957'   // Fallback Key 3
+    ];
   },
   currentKeyIndex: 0,
   
