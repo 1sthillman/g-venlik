@@ -2159,10 +2159,16 @@ function afterSave(siteName, code, unitRef, rec){
     [
       { ico:ic('send',17), t:'WhatsApp\'a gönder', s:'Bu kaydı direkt WhatsApp ile paylaş', primary:true,
         run:()=>{ 
+          const isGroupLink = P.waLink && P.waLink.includes('chat.whatsapp.com');
           const url = waLink(waText);
+          
+          if(isGroupLink){
+            /* Grup linki için: mesaj zaten kopyalandı, kullanıcıyı bilgilendir */
+            toast('Mesaj kopyalandı — grupta yapıştırın','ok');
+          }
+          
           const w = window.open(url,'_blank');
           if(!w) toast('Açılama engellendi — metin panoya kopyalandı','err');
-          else toast('WhatsApp açıldı','ok');
         } 
       },
       { ico:ic('map',17), t:'Planda göster', s:siteName+' '+code+' — uygulama içi planda işaretle',
@@ -3756,23 +3762,29 @@ function openShare(title, text, file, name){
   $('#shareModal').classList.add('show');
 }
 function waLink(text){ 
-  if(!P.waLink) return 'https://wa.me/?text='+encodeURIComponent(text);
-  /* WhatsApp grup linkiyse text parametresini ekle */
-  if(P.waLink.includes('chat.whatsapp.com')){
-    const sep = P.waLink.includes('?') ? '&' : '?';
-    return P.waLink + sep + 'text=' + encodeURIComponent(text);
+  /* WhatsApp grup linki varsa, mesaj parametresi ÇALIŞMAZ (WhatsApp API kısıtlaması)
+     Bu yüzden mesajı panoya kopyalayıp sadece grup linkini döndürüyoruz */
+  if(P.waLink && P.waLink.includes('chat.whatsapp.com')){
+    copyText(text, true); // Sessizce kopyala
+    return P.waLink; // Sadece grup linkini dön
   }
   /* wa.me linkiyse text parametresini ekle */
-  if(P.waLink.includes('wa.me')){
+  if(P.waLink && P.waLink.includes('wa.me')){
     const sep = P.waLink.includes('?') ? '&' : '?';
     return P.waLink + sep + 'text=' + encodeURIComponent(text);
   }
-  /* Diğer durumlarda kullanıcının linkini olduğu gibi kullan */
-  return P.waLink;
+  /* Özel link yoksa varsayılan wa.me */
+  return P.waLink ? P.waLink : 'https://wa.me/?text='+encodeURIComponent(text);
 }
 $('#shareWa').onclick=()=>{
+  const isGroupLink = P.waLink && P.waLink.includes('chat.whatsapp.com');
   const url=waLink(sharePayload.text);
-  copyText(sharePayload.text, true);
+  
+  if(isGroupLink){
+    /* Grup linki için: mesaj zaten kopyalandı, kullanıcıyı bilgilendir */
+    toast('Mesaj kopyalandı — grupta yapıştırın','ok');
+  }
+  
   const w=window.open(url,'_blank');
   if(!w) toast('Açılama engellendi — metin panoya kopyalandı','err');
 };
@@ -3827,6 +3839,7 @@ $('#exportWa').onclick=()=>{
 /* Her kaydı teker teker WhatsApp ile gönder */
 function sendVisitsOneByOne(list){
   let currentIndex = 0;
+  const isGroupLink = P.waLink && P.waLink.includes('chat.whatsapp.com');
   
   function sendNext(){
     if(currentIndex >= list.length){
@@ -3842,6 +3855,12 @@ function sendVisitsOneByOne(list){
                  `Görevli: ${v.guard||'—'}`;
     
     const url = waLink(text);
+    
+    if(isGroupLink){
+      /* Grup linki için: mesaj zaten kopyalandı, kullanıcıyı bilgilendir */
+      toast('Mesaj kopyalandı — grupta yapıştırın','ok');
+    }
+    
     const w = window.open(url,'_blank');
     
     currentIndex++;
