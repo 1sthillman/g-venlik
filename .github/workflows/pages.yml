@@ -1,0 +1,41 @@
+name: Deploy static content to Pages
+
+on:
+  # Her 'main' dalına (branch) kod itildiğinde (push) otomatik çalışır
+  push:
+    branches: ["main"]
+  # GitHub arayüzünden manuel tetiklemeye de izin verir
+  workflow_dispatch:
+
+# Gerekli GitHub izinleri (token permissions)
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Aynı anda birden fazla deploy olmasını engeller
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (Kodu Çek)
+        uses: actions/checkout@v4
+
+      - name: Setup Pages (Pages Ayarı)
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact (Dosyaları Yükle)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages (Yayınla)
+        id: deployment
+        uses: actions/deploy-pages@v4
