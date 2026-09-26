@@ -338,6 +338,27 @@ body.cam-on{ overflow:hidden; }
 .cam-guide b.tr{ top:0; right:0; border-left:0; border-bottom:0; }
 .cam-guide b.bl{ bottom:0; left:0; border-right:0; border-top:0; }
 .cam-guide b.br{ bottom:0; right:0; border-left:0; border-top:0; }
+
+/* Resize handle - Sağ alt köşe */
+.cam-resize{
+  position:absolute; bottom:-4px; right:-4px;
+  width:32px; height:32px; 
+  cursor:nwse-resize; z-index:10;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,169,77,.25);
+  border-radius:50%;
+  border:2px solid var(--amber);
+  opacity:0.8;
+  transition:opacity .2s, transform .2s;
+}
+.cam-resize:active{
+  opacity:1; transform:scale(1.1);
+}
+.cam-resize svg{
+  width:16px; height:16px;
+  color:var(--amber);
+}
+
 .cam-guide i{
   position:absolute; left:2px; right:2px; height:2px; border-radius:2px;
   background:linear-gradient(90deg,transparent,var(--amber),transparent);
@@ -407,9 +428,9 @@ body.cam-on{ overflow:hidden; }
 .cam-warn svg{ width:16px; height:16px; flex-shrink:0; margin-top:1px; color:#ff9f6e; }
 .cam-warn b{ color:#fff; }
 
-/* Carousel buton - Deklanşör üstünde */
+/* Carousel buton - Genişlik slider'ın üstünde */
 .cam-carousel{
-  position:absolute; bottom:110px; left:50%; transform:translateX(-50%);
+  position:absolute; bottom:170px; left:50%; transform:translateX(-50%);
   width:44px; height:44px; border-radius:50%;
   background:rgba(18,26,25,.75); border:1px solid rgba(255,255,255,.2);
   backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
@@ -1415,7 +1436,16 @@ body.cam-on{ overflow:hidden; }
     
     <div class="cam-frame">
       <div class="cam-overlay" id="camOverlay"></div>
-      <div class="cam-guide" id="camGuide"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b><i></i><u>Plakayı çerçeveye alın</u></div>
+      <div class="cam-guide" id="camGuide">
+        <b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b>
+        <i></i>
+        <u>Plakayı çerçeveye alın</u>
+        <div class="cam-resize" id="camResize">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2h-4M3 9V5a2 2 0 0 1 2-2h4"/>
+          </svg>
+        </div>
+      </div>
     </div>
     <div class="cam-warn" id="camWarn" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
@@ -3376,78 +3406,98 @@ const Cam = {
   progOff(){ const b=$('#camProg'); if(b){ b.firstElementChild.style.width='0%'; b.style.display='none'; } },
   scanning(on){ $('#camSheet').classList.toggle('scanning',!!on); $('#camShot').disabled=!!on; },
 
-  /* GELÄ°ÅžMÄ°Åž OKUMA ALANI KONTROLÃ‡Ã‡Ã‡: Pinch-zoom, Drag, Resize */
+  /* Çerçeve boyut kontrolü - Sadece resize handle + Hep merkezde */
   setupCropArea(){
-    const guide = $('.cam-guide');
-    if(!guide) return;
+    const resizeHandle = $('#camResize');
+    if(!resizeHandle) return;
     
-    let touchMode = null; // 'drag', 'pinch', null
-    let dragStart = { x: 0, y: 0, top: 0 };
-    let pinchStart = { dist: 0, centerY: 0, top: 0, height: 0 };
+    let resizing = false;
+    let startTouch = { x: 0, y: 0 };
+    let startSize = { width: 86, height: 28 };
     
-    guide.addEventListener('touchstart', (e) => {
-      // Panel açıksa çerçeve touch'ını engelle
+    resizeHandle.addEventListener('touchstart', (e) => {
+      // Panel açıksa engelle
       const panel = $('#camPanel');
       if(panel && panel.classList.contains('show')) return;
       
-      if(e.touches.length === 1){
-        // TEK PARMAK - SÜRÜKLEME MODU
-        e.preventDefault();
-        touchMode = 'drag';
-        guide.classList.add('dragging');
-        
-        const touch = e.touches[0];
-        const viewRect = $('#camView').getBoundingClientRect();
-        
-        dragStart.y = touch.clientY;
-        dragStart.top = this.cropArea.top;
-        
-      } else if(e.touches.length === 2){
-        // İKİ PARMAK - PINCH ZOOM MODU
-        e.preventDefault();
-        touchMode = 'pinch';
-        guide.classList.add('adjusting');
-        
-        const dy = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
-        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        const viewRect = $('#camView').getBoundingClientRect();
-        
-        pinchStart.dist = dy;
-        pinchStart.centerY = centerY;
-        pinchStart.height = this.cropArea.height;
-        pinchStart.top = this.cropArea.top;
+      e.preventDefault();
+      e.stopPropagation();
+      resizing = true;
+      
+      const touch = e.touches[0];
+      startTouch.x = touch.clientX;
+      startTouch.y = touch.clientY;
+      
+      // Mevcut boyutları al
+      const guide = $('#camGuide');
+      const viewRect = $('#camView').getBoundingClientRect();
+      const guideRect = guide.getBoundingClientRect();
+      
+      startSize.width = (guideRect.width / viewRect.width) * 100;
+      startSize.height = (guideRect.height / viewRect.height) * 100;
+      
+      guide.classList.add('adjusting');
+    }, { passive: false });
+    
+    document.addEventListener('touchmove', (e) => {
+      if(!resizing) return;
+      
+      // Panel açıksa engelle
+      const panel = $('#camPanel');
+      if(panel && panel.classList.contains('show')) return;
+      
+      e.preventDefault();
+      
+      const touch = e.touches[0];
+      const viewRect = $('#camView').getBoundingClientRect();
+      
+      // Delta hesapla (diagonal resize)
+      const deltaX = touch.clientX - startTouch.x;
+      const deltaY = touch.clientY - startTouch.y;
+      
+      // Ortalama delta (diagonal)
+      const deltaAvg = (deltaX + deltaY) / 2;
+      const deltaPercent = (deltaAvg / viewRect.width) * 100;
+      
+      // Yeni boyutlar
+      let newWidth = startSize.width + deltaPercent * 2; // *2 çünkü her iki yandan büyüyor
+      let newHeight = startSize.height + deltaPercent * 0.7; // Aspect ratio için
+      
+      // Sınırlar
+      newWidth = Math.max(50, Math.min(95, newWidth));
+      newHeight = Math.max(15, Math.min(40, newHeight));
+      
+      // Slider'ları güncelle
+      $('#frameWidth').value = Math.round(newWidth);
+      $('#frameWidthValue').textContent = Math.round(newWidth) + '%';
+      
+      $('#frameHeight').value = Math.round(newHeight);
+      $('#frameHeightValue').textContent = Math.round(newHeight) + '%';
+      
+      // Çerçeveyi güncelle (merkezde)
+      const guide = $('#camGuide');
+      const leftRight = (100 - newWidth) / 2;
+      const topBottom = (100 - newHeight) / 2;
+      
+      guide.style.left = leftRight + '%';
+      guide.style.right = leftRight + '%';
+      guide.style.top = topBottom + '%';
+      guide.style.height = newHeight + '%';
+      
+      this.updateOverlay();
+    }, { passive: false });
+    
+    document.addEventListener('touchend', () => {
+      if(resizing){
+        resizing = false;
+        const guide = $('#camGuide');
+        if(guide) guide.classList.remove('adjusting');
       }
-    }, {passive: false});
+    }, { passive: false });
     
-    guide.addEventListener('touchmove', (e) => {
-      // Panel açıksa çerçeve touch'ını engelle
-      const panel = $('#camPanel');
-      if(panel && panel.classList.contains('show')) return;
-      
-      if(touchMode === 'drag' && e.touches.length === 1){
-        // SÜRÜKLEME - Overlay'i yukarı/aşağı taşı
-        e.preventDefault();
-        
-        const touch = e.touches[0];
-        const viewRect = $('#camView').getBoundingClientRect();
-        
-        // Delta hesapla
-        const deltaY = touch.clientY - dragStart.y;
-        const deltaPercent = (deltaY / viewRect.height) * 100;
-        
-        // Yeni pozisyon
-        let newTop = dragStart.top + deltaPercent;
-        
-        // Sınırlar içinde tut
-        newTop = Math.max(2, Math.min(95 - this.cropArea.height, newTop));
-        
-        this.cropArea.top = newTop;
-        this.updateCropUI();
-        
-      } else if(touchMode === 'pinch' && e.touches.length === 2){
-        // PINCH - Overlay boyutunu değiştir ve merkezi koru
-        e.preventDefault();
-        
+    // İlk konumu ayarla (merkezde)
+    this.updateCropUI();
+  },
         const dy = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
         const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
         const viewRect = $('#camView').getBoundingClientRect();
@@ -3505,11 +3555,22 @@ const Cam = {
   },
   
   updateCropUI(){
-    const guide = $('.cam-guide');
+    const guide = $('#camGuide');
     if(!guide) return;
-    guide.style.top = this.cropArea.top + '%';
-    guide.style.height = this.cropArea.height + '%';
-    this.updateOverlay(); // Overlay'i de güncelle
+    
+    // Her zaman merkezde tut
+    const width = parseFloat($('#frameWidth').value || 86);
+    const height = parseFloat($('#frameHeight').value || 28);
+    
+    const leftRight = (100 - width) / 2;
+    const topBottom = (100 - height) / 2;
+    
+    guide.style.left = leftRight + '%';
+    guide.style.right = leftRight + '%';
+    guide.style.top = topBottom + '%';
+    guide.style.height = height + '%';
+    
+    this.updateOverlay();
   },
   
   /* Okuma sırasında sadece ayarlanan alanı kullan */
@@ -4565,22 +4626,26 @@ $('#camTorch').onclick=async ()=>{
 $('#frameWidth').oninput=(e)=>{
   const val = e.target.value;
   $('#frameWidthValue').textContent = val + '%';
+  
+  // Merkezde tut
   const guide = $('#camGuide');
   const leftRight = (100 - val) / 2;
   guide.style.left = leftRight + '%';
   guide.style.right = leftRight + '%';
+  
   Cam.updateOverlay();
 };
 
 $('#frameHeight').oninput=(e)=>{
   const val = e.target.value;
   $('#frameHeightValue').textContent = val + '%';
-  const guide = $('#camGuide');
-  const currentTop = parseFloat(guide.style.top || '36');
-  guide.style.height = val + '%';
+  
   // Merkezde tut
-  const newTop = Math.max(5, Math.min(95 - val, 50 - val/2));
-  guide.style.top = newTop + '%';
+  const guide = $('#camGuide');
+  const topBottom = (100 - val) / 2;
+  guide.style.top = topBottom + '%';
+  guide.style.height = val + '%';
+  
   Cam.updateOverlay();
 };
 
