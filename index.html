@@ -1039,6 +1039,34 @@ body.cam-on{ overflow:hidden; }
   <div class="page-body" id="helpBody"></div>
 </div>
 
+<!-- ===== GOOGLE MAPS KONUM SEÇİCİ (tam ekran) ===== -->
+<div class="page" id="mapsPage">
+  <div class="page-bar">
+    <button class="page-back" id="mapsBack" type="button" aria-label="Geri">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="page-t" id="mapsTitle">Konumu İşaretle</div>
+    <button class="page-act" id="mapsSave" type="button">Kaydet</button>
+  </div>
+  <div class="page-body" style="padding:0;overflow:hidden;">
+    <div id="mapsContainer" style="width:100%;height:100%;position:relative;">
+      <iframe id="mapsFrame" style="width:100%;height:100%;border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <div id="mapsPin" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-100%);pointer-events:none;z-index:10;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FF6B5B" stroke-width="2.5">
+          <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/>
+          <circle cx="12" cy="10" r="3" fill="#FF6B5B"/>
+        </svg>
+      </div>
+      <div class="maps-hint" style="position:absolute;top:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:10;pointer-events:none;">
+        Haritayı kaydırarak pin'i konuma getirin
+      </div>
+      <div class="maps-coords" id="mapsCoords" style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#FFA94D;padding:8px 12px;border-radius:8px;font-size:12px;font-family:'Space Grotesk',monospace;font-weight:600;z-index:10;pointer-events:none;">
+        40.8924, 29.4186
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="sheetBackdrop"></div>
 <div class="sheet" id="sheet">
   <div class="sheet-handle"></div>
@@ -4395,59 +4423,8 @@ function siteCard(site, OVR){
   el.querySelector('[data-a="pos"]').onclick=async ()=>{
     closeSiteMgr();
     
-    /* Google Maps ile Çınarköy Evleri bölgesinde konumlandırma */
-    const siteName = encodeURIComponent(site.name);
-    const cinarkoyLat = 40.8924;
-    const cinarkoyLng = 29.4186;
-    
-    /* Onay iste */
-    const ok = await ask(
-      'Google Maps ile konumlandır', 
-      site.name + ' için Google Maps açılacak. Çınarköy Evleri bölgesinde bloğun konumunu pin ile işaretleyin. Koordinatları kopyalayıp buraya geri yapıştırın.',
-      'Haritayı Aç'
-    );
-    
-    if(!ok) return;
-    
-    /* Google Maps'i Çınarköy Evleri konumunda aç */
-    const mapsUrl = `https://www.google.com/maps/search/${siteName}/@${cinarkoyLat},${cinarkoyLng},17z`;
-    window.open(mapsUrl, '_blank');
-    
-    /* Kullanıcıdan koordinat girmesini iste */
-    toast('Harita açıldı — konumu pin ile işaretleyin','ok');
-    
-    setTimeout(() => {
-      openForm({ 
-        title: 'Koordinatları yapıştırın', 
-        text: 'Google Maps\'te bloğu bulup konumu işaretleyin. URL\'deki koordinatları (örn: 40.8924,29.4186) kopyalayıp buraya yapıştırın.',
-        fields: [
-          { id: 'coords', label: 'Koordinatlar (lat,lng)', value: '', placeholder: '40.8924,29.4186' }
-        ],
-        ok: 'Kaydet',
-        onOk: v => {
-          const coords = String(v.coords || '').trim();
-          if(!coords.match(/^-?\d+\.\d+\s*,\s*-?\d+\.\d+$/)) {
-            toast('Geçersiz format. Örnek: 40.8924,29.4186', 'err');
-            return false;
-          }
-          
-          const [lat, lng] = coords.split(',').map(s => parseFloat(s.trim()));
-          
-          /* Koordinatları kaydet (box formatına dönüştür - örnek değerler) */
-          setOvr(site.id, { 
-            box: [100, 100, 140, 80], // Placeholder - asıl haritada kullanılmayacak
-            gpsLat: lat,
-            gpsLng: lng
-          });
-          
-          rebuild(); 
-          renderSiteMgr();
-          toast(site.name + ' konumu kaydedildi: ' + coords, 'ok');
-          sfx.ok();
-          return true;
-        }
-      });
-    }, 1500);
+    /* Google Maps modal'ını aç */
+    openMapsModal(site);
   };
   el.querySelector('[data-a="hide"]').onclick=async ()=>{
     if(o.off){ setOvr(site.id,{ off:false }); rebuild(); renderSiteMgr(); toast(site.name+' yeniden listeye alındı','ok'); return; }
@@ -4488,6 +4465,107 @@ function editUnitsForm(site){
       toast(parts.length+' daire kaydedildi','ok'); sfx.ok(); return true; } });
 }
 $('#siteMgrBack').onclick=()=>{ closeSiteMgr(); sfx.tap(); };
+
+/* ===== GOOGLE MAPS MODAL ===== */
+let currentMapSite = null;
+let currentMapCoords = { lat: 40.8924, lng: 29.4186 }; // Çınarköy Evleri default
+let mapsUpdateInterval = null;
+
+function openMapsModal(site){
+  currentMapSite = site;
+  const page = $('#mapsPage');
+  if(!page) return;
+  
+  /* Eğer site'in önceden kaydedilmiş koordinatları varsa onları kullan */
+  const OVR = siteOvr();
+  const o = OVR[site.id] || {};
+  if(o.gpsLat && o.gpsLng){
+    currentMapCoords = { lat: o.gpsLat, lng: o.gpsLng };
+  } else {
+    currentMapCoords = { lat: 40.8924, lng: 29.4186 }; // Çınarköy default
+  }
+  
+  /* Google Maps iframe URL'i oluştur - interaktif mod */
+  const mapUrl = `https://maps.google.com/maps?q=${currentMapCoords.lat},${currentMapCoords.lng}&t=m&z=17&output=embed&iwloc=near`;
+  
+  /* iframe'e URL'i yükle */
+  const iframe = $('#mapsFrame');
+  if(iframe) {
+    iframe.src = mapUrl;
+    
+    /* iframe yüklendiğinde koordinatları güncelle */
+    iframe.onload = () => {
+      updateMapsCoords();
+      /* Periyodik olarak iframe URL'ini kontrol et (kullanıcı haritayı kaydırdığında) */
+      if(mapsUpdateInterval) clearInterval(mapsUpdateInterval);
+      mapsUpdateInterval = setInterval(() => {
+        try {
+          /* iframe contentWindow'dan koordinat çekmeye çalış */
+          updateMapsCoords();
+        } catch(e) {
+          /* CORS hatası bekleniyor - kullanıcı manuel kaydedecek */
+        }
+      }, 1000);
+    };
+  }
+  
+  /* Başlığı güncelle */
+  const title = $('#mapsTitle');
+  if(title) title.textContent = site.name;
+  
+  /* Koordinat display'i güncelle */
+  updateMapsCoords();
+  
+  /* Sayfayı göster */
+  page.classList.add('show');
+  toast('Haritayı kaydırıp Kaydet\'e basın','ok');
+}
+
+function updateMapsCoords(){
+  const coordsEl = $('#mapsCoords');
+  if(coordsEl) {
+    coordsEl.textContent = currentMapCoords.lat.toFixed(6) + ', ' + currentMapCoords.lng.toFixed(6);
+  }
+}
+
+function closeMapsModal(){
+  const page = $('#mapsPage');
+  if(page) page.classList.remove('show');
+  if(mapsUpdateInterval) {
+    clearInterval(mapsUpdateInterval);
+    mapsUpdateInterval = null;
+  }
+  currentMapSite = null;
+}
+
+$('#mapsBack').onclick = () => { 
+  closeMapsModal(); 
+  sfx.tap(); 
+  openSiteMgr(); // Geri adres yöneticisine dön
+};
+
+$('#mapsSave').onclick = async () => {
+  if(!currentMapSite) return;
+  
+  /* Mevcut koordinatları kaydet */
+  const lat = currentMapCoords.lat;
+  const lng = currentMapCoords.lng;
+  
+  /* Koordinatları kaydet */
+  setOvr(currentMapSite.id, { 
+    box: [100, 100, 140, 80], // Placeholder
+    gpsLat: lat,
+    gpsLng: lng
+  });
+  
+  rebuild(); 
+  renderSiteMgr();
+  closeMapsModal();
+  
+  toast(currentMapSite.name + ' konumu kaydedildi','ok');
+  sfx.ok();
+};
+
 $('#siteMgrAdd').onclick=()=>{
   openForm({ title:'Yeni blok ekle', text:'Blok adını ve sokağını yazın. Daire numaralarını bir sonraki adımda girersiniz.',
     fields:[{ id:'name', label:'Blok adı', value:'', placeholder:'Örn. Cevahir 563-20' },
