@@ -183,6 +183,8 @@ header{ gap:10px; }
   display:flex; gap:9px; align-items:flex-start; cursor:pointer;
 }
 .banner.info{ background:#123330; color:var(--cyan); border-bottom-color:var(--cyan); }
+.banner.ok{ background:#1a3a2a; color:#4FD8C9; border-bottom-color:#2a6a50; }
+.banner.err{ background:#3a1a1a; color:#FF6B5B; border-bottom-color:#6a2a2a; }
 .banner b{ font-weight:700; }
 .banner .bx{ display:flex; align-items:center; flex-shrink:0; }
 .banner .bx svg{ width:16px; height:16px; }
@@ -2053,7 +2055,16 @@ function paintUnitHistory(){
 }
 }
 function mapsUrl(site, code){
+  /* Önce GPS koordinatlarını kontrol et (override'dan) */
+  const OVR = siteOvr();
+  const o = OVR[site.id] || {};
+  if(o.gpsLat && o.gpsLng) {
+    /* GPS koordinatları varsa direkt koordinat linkini ver */
+    return 'https://www.google.com/maps?q=' + o.gpsLat + ',' + o.gpsLng + '&ll=' + o.gpsLat + ',' + o.gpsLng + '&z=17';
+  }
+  /* Eski site.lat/lng kontrolü (geriye uyumluluk) */
   if(site.lat&&site.lng) return 'https://www.google.com/maps?q='+site.lat+','+site.lng;
+  /* Koordinat yoksa Çınarköy Evleri + blok adı + daire ile arama */
   return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('Çınarköy Evleri '+site.name+' '+code);
 }
 function openMaps(site, code){
@@ -4046,8 +4057,12 @@ async function buildPackage(kind){
   const tombs=raw.filter(v=>v.deleted && (!since || (v.updatedAt||0)>since));
   const couriers=(await dbAll(S_C)).filter(c=>!since || (c.updatedAt||0)>since);
   return { app:'ck-nobet', v:2, kind:kind||'full', at:Date.now(),
-    from:{ d:DEVICE, n:P.guard||'' }, sites:userSites(), notes:NOTES,
-    visits:visits.map(packVisit).concat(tombs.map(packVisit)), couriers:couriers.map(packCourier) };
+    from:{ d:DEVICE, n:P.guard||'' }, 
+    sites:userSites(), 
+    notes:NOTES,
+    siteOverrides:siteOvr(), // GPS koordinatları ve diğer override'lar
+    visits:visits.map(packVisit).concat(tombs.map(packVisit)), 
+    couriers:couriers.map(packCourier) };
 }
 async function mergePackage(pkg){
   if(!pkg) throw new Error('Boş veri');
@@ -4089,6 +4104,14 @@ async function mergePackage(pkg){
   if(pkg.sites){ const cur=userSites(); const ids=cur.map(s=>s.id);
     pkg.sites.forEach(s=>{ if(s && s.id && ids.indexOf(s.id)<0){ cur.push(s); ids.push(s.id); } }); setUserSites(cur); }
   if(pkg.notes && typeof pkg.notes==='object'){ Object.assign(NOTES, pkg.notes); saveNotes(); rebuild(); }
+  /* GPS koordinatları ve site override'larını import et */
+  if(pkg.siteOverrides && typeof pkg.siteOverrides==='object'){
+    const currentOvr = siteOvr();
+    Object.assign(currentOvr, pkg.siteOverrides);
+    localStorage.setItem('ck_ovr', JSON.stringify(currentOvr));
+    OVR_CACHE = null; // Cache'i temizle
+    rebuild();
+  }
   /* giriş kayıtlarında firma boşsa kurye listesinden tamamla */
   const all=await dbAll(S_V);
   for(const v of all){ if(!v.company && v.plate){
@@ -4485,8 +4508,9 @@ function openMapsModal(site){
     currentMapCoords = { lat: 40.8924, lng: 29.4186 }; // Çınarköy default
   }
   
-  /* Google Maps iframe URL'i oluştur - interaktif mod */
-  const mapUrl = `https://maps.google.com/maps?q=${currentMapCoords.lat},${currentMapCoords.lng}&t=m&z=17&output=embed&iwloc=near`;
+  /* Google Maps iframe URL'i oluştur - "Çınarköy Evleri" görünümü */
+  /* Blok adını değil, "Çınarköy Evleri" konumunu göster */
+  const mapUrl = `https://maps.google.com/maps?q=Çınarköy+Evleri,Tuzla,İstanbul&ll=${currentMapCoords.lat},${currentMapCoords.lng}&z=17&t=m&output=embed&iwloc=near`;
   
   /* iframe'e URL'i yükle */
   const iframe = $('#mapsFrame');
@@ -4496,29 +4520,19 @@ function openMapsModal(site){
     /* iframe yüklendiğinde koordinatları güncelle */
     iframe.onload = () => {
       updateMapsCoords();
-      /* Periyodik olarak iframe URL'ini kontrol et (kullanıcı haritayı kaydırdığında) */
-      if(mapsUpdateInterval) clearInterval(mapsUpdateInterval);
-      mapsUpdateInterval = setInterval(() => {
-        try {
-          /* iframe contentWindow'dan koordinat çekmeye çalış */
-          updateMapsCoords();
-        } catch(e) {
-          /* CORS hatası bekleniyor - kullanıcı manuel kaydedecek */
-        }
-      }, 1000);
     };
   }
   
   /* Başlığı güncelle */
   const title = $('#mapsTitle');
-  if(title) title.textContent = site.name;
+  if(title) title.textContent = site.name + ' — Çınarköy Evleri';
   
   /* Koordinat display'i güncelle */
   updateMapsCoords();
   
   /* Sayfayı göster */
   page.classList.add('show');
-  toast('Haritayı kaydırıp Kaydet\'e basın','ok');
+  toast('Haritayı kaydırıp pin\'i ' + site.name + ' konumuna getirin','ok');
 }
 
 function updateMapsCoords(){
@@ -4547,23 +4561,66 @@ $('#mapsBack').onclick = () => {
 $('#mapsSave').onclick = async () => {
   if(!currentMapSite) return;
   
-  /* Mevcut koordinatları kaydet */
-  const lat = currentMapCoords.lat;
-  const lng = currentMapCoords.lng;
-  
-  /* Koordinatları kaydet */
-  setOvr(currentMapSite.id, { 
-    box: [100, 100, 140, 80], // Placeholder
-    gpsLat: lat,
-    gpsLng: lng
+  /* Kullanıcıdan koordinatları manuel girişle doğrulat */
+  /* Çünkü iframe CORS nedeniyle koordinat çekemez */
+  openForm({ 
+    title: 'Koordinatları Onayla', 
+    text: currentMapSite.name + ' için haritada gördüğünüz konumun koordinatlarını onaylayın veya düzeltin. Google Maps\'te konuma tıklayıp koordinatları kopyalayabilirsiniz.',
+    fields: [
+      { id: 'lat', label: 'Enlem (Latitude)', value: currentMapCoords.lat.toFixed(6), placeholder: '40.892400' },
+      { id: 'lng', label: 'Boylam (Longitude)', value: currentMapCoords.lng.toFixed(6), placeholder: '29.418600' }
+    ],
+    ok: 'Kaydet',
+    onOk: v => {
+      const lat = parseFloat(v.lat);
+      const lng = parseFloat(v.lng);
+      
+      if(isNaN(lat) || isNaN(lng)) {
+        toast('Geçersiz koordinat değerleri', 'err');
+        return false;
+      }
+      
+      /* Koordinatların Türkiye sınırları içinde olduğunu kontrol et */
+      if(lat < 36 || lat > 42 || lng < 26 || lng > 45) {
+        toast('Koordinatlar Türkiye sınırları dışında', 'err');
+        return false;
+      }
+      
+      /* Koordinatları global değişkende güncelle */
+      currentMapCoords = { lat: lat, lng: lng };
+      
+      /* Koordinatları kaydet */
+      setOvr(currentMapSite.id, { 
+        box: [100, 100, 140, 80], // Placeholder
+        gpsLat: lat,
+        gpsLng: lng
+      });
+      
+      rebuild(); 
+      renderSiteMgr();
+      closeMapsModal();
+      
+      /* Kullanıcıya detaylı bilgi ver */
+      toast(currentMapSite.name + ' GPS kaydedildi: ' + lat.toFixed(6) + ', ' + lng.toFixed(6), 'ok');
+      sfx.ok();
+      
+      /* Koordinatların kaydedildiğini ve kullanılacağını onaylama mesajı */
+      setTimeout(() => {
+        alert('✓ GPS Koordinatları Kaydedildi\n\n' +
+              'Blok: ' + currentMapSite.name + '\n' +
+              'Enlem: ' + lat.toFixed(6) + '\n' +
+              'Boylam: ' + lng.toFixed(6) + '\n\n' +
+              'Bu koordinatlar:\n' +
+              '• QR kodlara yazılacak\n' +
+              '• Kuryeler bu koordinatlara gidecek\n' +
+              '• Harita paylaşımlarında kullanılacak\n' +
+              '• Veri yedeklemelerine dahil edilecek\n\n' +
+              'Koordinatların doğruluğundan emin olun!');
+      }, 600);
+      
+      return true;
+    }
   });
-  
-  rebuild(); 
-  renderSiteMgr();
-  closeMapsModal();
-  
-  toast(currentMapSite.name + ' konumu kaydedildi','ok');
-  sfx.ok();
 };
 
 $('#siteMgrAdd').onclick=()=>{
@@ -4933,8 +4990,27 @@ function checkEnv(){
 
 /* ---------------------------------------------------------------- 19. başlat */
 (async function boot(){
-  try{ await openDB(); }catch(e){ LS_MODE=true;
-    setTimeout(()=>toast('Veritabanı açılamadı — kayıtlar tarayıcı belleğinde tutuluyor','err'),1800); }
+  try{ 
+    await openDB(); 
+    /* IndexedDB başarıyla açıldı */
+    setTimeout(()=>{
+      const b=$('#banner');
+      b.className='banner ok'; b.style.display='flex';
+      $('#bannerText').innerHTML='<b>✓ Veritabanı aktif</b> — Tüm kayıtlar güvenli şekilde IndexedDB\'de tutuluyor';
+      setTimeout(()=>{ b.style.display='none'; }, 4000);
+    }, 1000);
+  } catch(e){ 
+    LS_MODE=true;
+    /* IndexedDB başarısız - LocalStorage kullanılacak */
+    setTimeout(()=>{
+      const b=$('#banner');
+      b.className='banner err'; b.style.display='flex';
+      $('#bannerText').innerHTML='<b>⚠ DİKKAT:</b> IndexedDB açılamadı — Kayıtlar tarayıcı belleğinde (localStorage) tutuluyor. Çok fazla kayıt eklerseniz sorun çıkabilir!';
+      b.onclick=()=>{ 
+        alert('IndexedDB veritabanı açılamadı. Olası nedenler:\n\n• Tarayıcı gizli modda (private/incognito)\n• Tarayıcı ayarlarında IndexedDB kapalı\n• Disk alanı dolmuş\n• Tarayıcı eski sürüm\n\nŞu an kayıtlar localStorage\'da tutuluyor ama bu sınırlı (max ~5MB). Çok kayıt eklerseniz veri kaybı olabilir. Normal modda açın veya farklı tarayıcı deneyin.'); 
+      };
+    }, 1800);
+  }
   try{ const lg=await readLegacy(); if(lg.length){ const n=await migrateLegacy(lg); if(n) setTimeout(()=>toast(n+' eski kayıt aktarıldı','ok'),1400); } }catch(e){}
   rebuild(); await refresh(); renderLog(); paintPrefs(); paintSyncState(); checkEnv();
   setInterval(tickClock,15000); tickClock();
