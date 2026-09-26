@@ -625,6 +625,8 @@ body.cam-on{ overflow:hidden; }
 .unit-stats .n{ font-family:'Space Grotesk'; font-weight:700; font-size:15px; color:var(--amber); }
 .unit-stats .l{ font-size:10.5px; color:var(--muted); margin-top:1px; }
 .mini-list{ max-height:190px; overflow-y:auto; margin-bottom:12px; display:flex; flex-direction:column; gap:6px; }
+.mini-list.carousel{ flex-direction:row; overflow-x:auto; overflow-y:hidden; max-height:none; padding:8px 0; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
+.mini-list.carousel .ml{ min-width:260px; flex-shrink:0; scroll-snap-align:start; }
 .mini-list .ml{ background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:8px 11px; font-size:12px; display:flex; justify-content:space-between; gap:8px; }
 .mini-list .ml span{ color:var(--muted); white-space:nowrap; }
 
@@ -1877,12 +1879,30 @@ function paintUnitHistory(){
   $('#usLast').textContent=list.length?fmtTR(list[0].ts):'—';
   $('#usCourier').textContent=list.length?(list[0].courier||'—'):'—';
   const h=$('#unitHistory'); h.innerHTML='';
-  if(!list.length){ h.innerHTML='<div class="ml"><span>Bu daireye daha önce kayıt yapılmamış</span></div>'; return; }
-  list.slice(0,12).forEach(v=>{ const d=document.createElement('div'); d.className='ml';
+  
+  /* Eğer 4'ten fazla giriş varsa carousel yap */
+  if(list.length > 4){
+    h.classList.add('carousel');
+  } else {
+    h.classList.remove('carousel');
+  }
+  
+  if(!list.length){ 
+    h.classList.remove('carousel');
+    h.innerHTML='<div class="ml"><span>Bu daireye daha önce kayıt yapılmamış</span></div>'; 
+    return; 
+  }
+  
+  /* En fazla 20 giriş göster (carousel'de çok fazla olmasın) */
+  list.slice(0,20).forEach(v=>{ 
+    const d=document.createElement('div'); 
+    d.className='ml';
     const co=v.company||firmOf(v.plate,v.courier);
-    d.innerHTML='<div>'+esc(v.courier||'—')+(v.plate?' <span class="plate-sm">'+esc(v.plate)+'</span>':'')+'</div>'
+    d.innerHTML='<div>'+esc(v.courier||'—')
+      +(v.plate?' <span class="plate-sm">'+esc(v.plate)+'</span>':'')+'</div>'
       +'<span>'+fmtTR(v.ts,true)+' · '+esc(v.guard||'—')+(co?' · '+esc(co):'')+'</span>';
-    h.appendChild(d); });
+    h.appendChild(d); 
+  });
 }
 function mapsUrl(site, code){
   if(site.lat&&site.lng) return 'https://www.google.com/maps?q='+site.lat+','+site.lng;
@@ -3454,6 +3474,13 @@ function renderLog(){
     detailsList.style.paddingLeft = '0px';
     detailsList.style.marginTop = '0px';
     detailsList.style.marginBottom = '8px';
+    detailsList.style.maxHeight = '400px';
+    detailsList.style.overflowY = 'auto';
+    detailsList.style.transition = 'max-height 0.3s ease';
+    
+    /* Detay scroll'u daha güzel yap */
+    detailsList.style.scrollbarWidth = 'thin';
+    detailsList.style.scrollbarColor = 'var(--line) transparent';
     
     buildingVisits.slice(0,400).forEach(v=>{
       const el=document.createElement('div'); 
@@ -3476,9 +3503,26 @@ function renderLog(){
     buildingHeader.onclick = (e) => {
       e.stopPropagation();
       const isOpen = detailsList.style.display === 'block';
-      detailsList.style.display = isOpen ? 'none' : 'block';
+      
+      if(isOpen){
+        detailsList.style.maxHeight = '0px';
+        setTimeout(() => {
+          detailsList.style.display = 'none';
+        }, 300);
+      } else {
+        detailsList.style.display = 'block';
+        setTimeout(() => {
+          detailsList.style.maxHeight = '400px';
+        }, 10);
+      }
+      
       const icon = buildingHeader.querySelector('svg');
-      if(icon) icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+      if(icon) {
+        icon.style.transition = 'transform 0.3s ease';
+        icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+      }
+      
+      sfx.tap();
     };
     
     box.appendChild(buildingHeader);
