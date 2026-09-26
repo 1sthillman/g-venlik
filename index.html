@@ -2824,8 +2824,13 @@ const Cam = {
     this.ph('Kamera açılıyor…');
     try{
       this.stream=await navigator.mediaDevices.getUserMedia({
-        video:{ facingMode:{ ideal:this.facing }, width:{ideal:1920}, height:{ideal:1080}, 
-                focusMode:{ ideal:'continuous' }, advanced:[{ focusMode:'continuous' }] }, audio:false });
+        video:{ 
+          facingMode:{ ideal:this.facing }, 
+          width:{ideal:1920}, 
+          height:{ideal:1080}
+        }, 
+        audio:false 
+      });
       const v=$('#camVideo'); v.srcObject=this.stream; v.style.display='block'; $('#camPh').style.display='none';
       
       /* Video tıklamayla odaklanma özelliği */
@@ -2868,11 +2873,13 @@ const Cam = {
       this.status('Plakayı çerçeveye alın — 2 parmakla çerçeveyi ayarlayın, odak için ekrana dokunun');
       if(P.autoCam) this.autoT=setTimeout(()=>{ if(this.stream) this.shoot(); }, 1500);
     }catch(e){
-      const why = (e&&e.name==='NotAllowedError') ? 'Kamera izni verilmedi.'
-        : (e&&e.name==='SecurityError') ? 'Tarayıcı güvenlik kuralı nedeniyle kamera engellendi.'
-        : (e&&e.name==='NotFoundError') ? 'Kamerayla bağlantı kurulamadı — başka bir uygulama kullanıyor olabilir.'
-        : (e&&e.name==='NotReadableError') ? 'Kamera başka bir uygulama tarafından kullanılıyor.'
-        : 'Kamera açılamadı: '+(e&&e.name?e.name:'bilinmeyen hata');
+      console.error('Kamera hatası:', e);
+      const why = (e && e.name === 'NotAllowedError') ? 'Kamera izni verilmedi.'
+        : (e && e.name === 'SecurityError') ? 'Tarayıcı güvenlik kuralı nedeniyle kamera engellendi.'
+        : (e && e.name === 'NotFoundError') ? 'Kamerayla bağlantı kurulamadı — başka bir uygulama kullanıyor olabilir.'
+        : (e && e.name === 'NotReadableError') ? 'Kamera başka bir uygulama tarafından kullanılıyor.'
+        : (e && e.name === 'TypeError') ? 'Kamera ayarları desteklenmiyor: ' + (e.message || 'Bilinmeyen hata')
+        : 'Kamera açılamadı: ' + (e && e.name ? e.name : 'bilinmeyen hata') + (e && e.message ? ' - ' + e.message : '');
       this.ph('<b>'+why+'</b><br>Yine de galeriden plaka fotoğrafı seçebilir ya da plakayı elle yazabilirsiniz.');
       this.status(why, true);
       $('#camShot').disabled=true;
