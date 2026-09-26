@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    Çınarköy Nöbet — v2.0
    Çevrimdışı çalışan, telefonlar arası aktarılabilir güvenlik nöbet asistanı
    ========================================================================== */
@@ -312,18 +312,97 @@ function firmOf(plate, fallbackCourier){
    ekleme ve silebilirsiniz. Değişiklikler cihazınızda saklanır ve yedeklenir.
    ============================================================================ */
 const BASE_SITES = [
-  { id:'cevahir563',   street:'Cevahir',   name:'Cevahir 563-13',  box:[225,335,280,85],  units:['A1','A2','B','A3','A4','C1'] },
-  { id:'cevahir564',   street:'Cevahir',   name:'Cevahir 564-1',   box:[500,110,290,345], units:['E','A8','A7','C2','A6','A5','D','B','A4','C1','A3','E1','E2','C3','C4','A2','B1','B2','A1'] },
-  { id:'aydur563-15',  street:'Aydur',     name:'Aydur 563-15',    box:[75,420,160,140],  units:['I','J','K'] },
-  { id:'aydur563-14',  street:'Aydur',     name:'Aydur 563-14',    box:[235,420,215,140], units:['N','O','P','L','M'] },
-  { id:'gokyol563-16', street:'Gökyol',    name:'Gökyol 563-16',   box:[75,560,375,145],  units:['A','B','C','D','E','F','G','H'] },
-  { id:'serra563-18',  street:'Serra',     name:'Serra 563-18',    box:[75,730,95,150],   units:['B2','A2','B1'] },
-  { id:'serra563-17',  street:'Serra',     name:'Serra 563-17',    box:[170,705,280,175], units:['C1','A1','C2','C3','C4','A2','E1','H1'] },
-  { id:'farasa563-19', street:'Faraşlar',  name:'Faraşlar 563-19', box:[75,880,375,150],  units:['B4','B3','D1','F1','B5','G2','G1'] },
-  { id:'karpem570-2',  street:'Karpem',    name:'Karpem 570-2',    box:[455,450,165,150], units:['C2','C1','B2','B1','D','A'] },
-  { id:'ozkiyi570-1',  street:'Özkıyı',    name:'Özkıyı 570-1',    box:[455,605,165,265], units:['E2','E1','D2','D1','A','B1','B2','C'] },
-  { id:'mustafa566',   street:'Mustafa',   name:'Mustafa 566-1',   box:[455,900,195,130], units:['B4','A1','B3','B2','B1'] },
-  { id:'karpem566-1',  street:'Karpem',    name:'Karpem 566-1',    box:[625,455,165,65],  units:['B','A'] }
+  /*
+   * ============================================================
+   * GERCEK ADRES LISTESI - Cinarköy HT Mahallesi
+   * Kaynak: Site yerlesim plani görseli (güncel)
+   * Sokaklar: Aleyna Sokak, Dede Korkut Sokak, Ovacık Sokak,
+   *           Emekçi Sokak, Kışlık Sokak, Dumlusu Sokak
+   * Box koordinatlari: viewBox 0 0 900 1323 (harita görseliyle hizali)
+   * ============================================================
+   */
+
+  /* ---- CEVAHIR BLOKLARI ---- */
+  {
+    id:'cevahir563-13', street:'Aleyna Sokak', name:'Cevahir 563-13',
+    box:[155,290,250,82],
+    units:['A1','A2','B','A3','A4','C1']
+  },
+  {
+    id:'cevahir563-12', street:'Kışlık Sokak', name:'Cevahir 563-12',
+    box:[375,155,100,100],
+    units:['A8','A7','C2']
+  },
+  {
+    id:'cevahir564-1', street:'Dumlusu Sokak', name:'Cevahir 564-1',
+    box:[478,40,310,375],
+    units:['E','D','A4','C1','C2','A3','A8','A7','A2','A6','A5','B','E1','E2','C3','C4','B1','B2','A1']
+  },
+
+  /* ---- AYDUR BLOKLARI ---- */
+  {
+    id:'aydur563-15', street:'Dede Korkut Sokak', name:'Aydur 563-15',
+    box:[42,392,140,160],
+    units:['I','J','K']
+  },
+  {
+    id:'aydur563-14', street:'Dede Korkut Sokak', name:'Aydur 563-14',
+    box:[185,385,195,167],
+    units:['N','O','P','L','M']
+  },
+
+  /* ---- GÖKYOL BLOKLARI ---- */
+  {
+    id:'gokyol563-16', street:'Ovacık Sokak', name:'Gökyol 563-16',
+    box:[42,555,370,148],
+    units:['A','B','C','D','E','F','G','H']
+  },
+
+  /* ---- SERRA BLOKLARI ---- */
+  {
+    id:'serra563-18', street:'Ovacık Sokak', name:'Serra 563-18',
+    box:[42,708,92,160],
+    units:['B3','B2','A2','B1']
+  },
+  {
+    id:'serra563-17', street:'Ovacık Sokak', name:'Serra 563-17',
+    box:[137,700,268,178],
+    units:['C1','A1','C2','C3','C4','A2','E1','H1']
+  },
+
+  /* ---- PEKERLER BLOKLARI ---- */
+  {
+    id:'pekerler563-19', street:'Emekçi Sokak', name:'Pekerler 563-19',
+    box:[42,870,370,155],
+    units:['B4','D2','D1','F1','B5','G2','G1']
+  },
+
+  /* ---- KARPEM BLOKLARI ---- */
+  {
+    id:'karpem570-3', street:'Dumlusu Sokak', name:'Karpem 570-3',
+    box:[408,398,115,192],
+    units:['C2','C1','B2','B3','D','A']
+  },
+  {
+    id:'karpem565-1', street:'Aleyna Sokak', name:'Karpem 565-1',
+    box:[578,400,172,77],
+    units:['B','A']
+  },
+
+  /* ---- ÖZKİYI BLOKLARI ---- */
+  {
+    id:'ozkiyi570-1', street:'Dumlusu Sokak', name:'Özkıyı 570-1',
+    box:[408,590,115,262],
+    units:['E2','E1','D2','D1','A','B1','B2','C']
+  },
+
+  /* ---- EGEYAPI BLOKLARI ---- */
+  {
+    id:'egeyapi569-1', street:'Emekçi Sokak', name:'Egeyapı 569-1',
+    box:[408,855,188,218],
+    units:['B4','A1','B3','D2','B1','B2','D1','A2','C']
+  }
+
 ].map(s=>{ s.base=true; s.units=s.units.map(c=>({ c:c, entry:'' })); return s; });
 
 let NOTES = load('ck_notes', {});
@@ -694,9 +773,17 @@ function courierSuggest(){
     box.appendChild(d); });
 }
 $('#courierPlateInput').addEventListener('input', ()=>{
-  const el=$('#courierPlateInput'); const pos=el.selectionStart; el.value=fmtPlate(el.value);
-  try{ el.setSelectionRange(pos,pos); }catch(e){}
-  /* nöbetçi plakaya dokundu — zayıf okuma işareti kalkar */
+  const el=$('#courierPlateInput');
+  const oldVal=el.value, pos=el.selectionStart;
+  const newVal=fmtPlate(oldVal);
+  if(newVal!==oldVal){
+    el.value=newVal;
+    // Cursor ofsetini duzelt: format bosluk ekleyince/cikarinca dogru konuma git
+    const diff=newVal.length-oldVal.length;
+    const newPos=Math.max(0,Math.min(newVal.length, pos+diff));
+    try{ el.setSelectionRange(newPos,newPos); }catch(e){}
+  }
+  /* nobetci plakaya dokundu - zayif okuma isareti kalkar */
   $('#plateHint').className=''; $('#courierPlateBox').classList.remove('weak');
   plateLookup();
 });
@@ -764,7 +851,7 @@ function openActions(title, text, actions){
     const b=document.createElement('button'); b.type='button';
     if(a.primary) b.className='prim';
     if(a.danger) b.className='danger';
-    b.innerHTML='<span class="ai">'+esc(a.ico||'•')+'</span><span class="at">'+esc(a.t)
+    b.innerHTML='<span class="ai">'+(a.ico||'•')+'</span><span class="at">'+esc(a.t)
       +(a.s?'<small>'+esc(a.s)+'</small>':'')+'</span>';
     b.onclick=()=>{ $('#actModal').classList.remove('show'); setTimeout(()=>{ if(a.run) a.run(); },80); };
     box.appendChild(b);
