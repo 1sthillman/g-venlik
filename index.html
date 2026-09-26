@@ -287,10 +287,22 @@ body.cam-on{ overflow:hidden; }
   position:absolute; left:7%; right:7%; top:36%; height:28%; 
   touch-action:none; pointer-events:auto; transition:all .2s ease-out;
 }
-.cam-guide.adjusting{ transition:none; }
+.cam-guide.adjusting{ 
+  transition:none; 
+  filter:drop-shadow(0 0 12px rgba(255,169,77,.8));
+}
+.cam-guide.dragging{ 
+  transition:none; 
+  filter:drop-shadow(0 0 16px rgba(79,216,201,.9));
+}
+.cam-guide.dragging b{
+  border-color:var(--cyan);
+  filter:drop-shadow(0 0 8px rgba(79,216,201,.7));
+}
 .cam-guide b{
   position:absolute; width:24px; height:24px; border:2.5px solid var(--amber); border-radius:5px;
   filter:drop-shadow(0 0 6px rgba(255,169,77,.5));
+  transition:border-color .2s, filter .2s;
 }
 .cam-guide b.tl{ top:0; left:0; border-right:0; border-bottom:0; }
 .cam-guide b.tr{ top:0; right:0; border-left:0; border-bottom:0; }
@@ -310,7 +322,9 @@ body.cam-on{ overflow:hidden; }
   color:var(--amber); font-weight:700; text-shadow:0 1px 6px rgba(0,0,0,.9);
   line-height:1.3;
 }
-.cam-guide u::after{ content:'\ADAR ALAN = HIZLI OKUMA'; white-space:pre; display:block; font-size:9px; opacity:.8; margin-top:2px; }
+.cam-guide u::after{ content:'\ATEK PARMAK: TAŞI · İKİ PARMAK: BOYUT'; white-space:pre; display:block; font-size:9px; opacity:.8; margin-top:2px; }
+.cam-guide.dragging u::after{ content:'\ATAŞINIYOR...'; color:var(--cyan); }
+.cam-guide.adjusting u::after{ content:'\ABOYUTLANDIRILIYOR...'; }
 
 /* sonuç kartı — görüntünün üstünde */
 .cam-out{
@@ -385,10 +399,12 @@ body.cam-on{ overflow:hidden; }
   transition:transform .12s;
 }
 .shutter i{ display:block; width:64px; height:64px; border-radius:50%; background:#0b1110;
-  box-shadow:inset 0 1px 3px rgba(255,255,255,.22); transition:transform .1s, background .15s; }
+  box-shadow:inset 0 1px 3px rgba(255,255,255,.22); transition:transform .1s, background .15s, opacity .2s; }
 .shutter:active i{ transform:scale(.82); }
-.shutter[disabled]{ opacity:.45; pointer-events:none; }
-#camSheet.scanning .shutter i{ background:var(--amber-dim); }
+.shutter[disabled]{ opacity:.45; pointer-events:none; filter:grayscale(0.5); }
+.shutter[disabled] i{ background:rgba(11,17,16,0.6); }
+#camSheet.scanning .shutter i{ background:var(--amber-dim); animation:shutterPulse 1.2s ease-in-out infinite; }
+@keyframes shutterPulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.6; } }
 
 /* ilerleme çubuğu */
 .prog{ height:3px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,.14); }
@@ -673,6 +689,10 @@ body.cam-on{ overflow:hidden; }
 .pill.warn{ color:var(--warn); border-color:#4a3a1d; }
 .spin{ width:15px; height:15px; border:2px solid rgba(255,255,255,.25); border-top-color:var(--amber); border-radius:50%; animation:sp .7s linear infinite; display:inline-block; vertical-align:-3px; }
 @keyframes sp{ to{ transform:rotate(360deg); } }
+@keyframes focusRing{ 
+  0%{ opacity:1; transform:scale(1); } 
+  100%{ opacity:0; transform:scale(2.2); } 
+}
 @media (max-width:360px){ .tab{ font-size:9.5px; } .tab svg{ width:19px; height:19px; } .stat4 .stat{ padding:10px 8px; } }
 </style>
 </head>
@@ -1326,6 +1346,10 @@ body.cam-on{ overflow:hidden; }
       <span>Yaz</span>
     </button>
     <button class="shutter" id="camShot" type="button" title="Çek" aria-label="Çek"><i></i></button>
+    <button class="cam-side" id="camTorch" type="button" style="display:none;">
+      <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v4M13 2v4M12 6L8 12h8L12 6zM8 12l2 10h4l2-10"/></svg></span>
+      <span id="camTorchLabel">Flaş</span>
+    </button>
     <button class="cam-side" id="camSwitch" type="button">
       <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/></svg></span>
       <span>Çevir</span>
@@ -2811,6 +2835,210 @@ function imageQuality(src){
   return { mean:sum/n, sharp:sharp };
 }
 
+/* ==================== GELİŞMİŞ ÖN İŞLEME - OpenCV.js destekli maksimum netlik ==================== */
+let CV_READY = false, CV_LOADING = false;
+
+/* OpenCV.js'i tembel yükleme (sadece ilk okumada) */
+async function ensureOpenCV(){
+  if(CV_READY) return true;
+  if(CV_LOADING) {
+    /* Zaten yükleniyor, bitmesini bekle */
+    return new Promise((resolve) => {
+      const check = setInterval(() => {
+        if(CV_READY || !CV_LOADING){ clearInterval(check); resolve(CV_READY); }
+      }, 100);
+      setTimeout(() => { clearInterval(check); resolve(false); }, 10000);
+    });
+  }
+  CV_LOADING = true;
+  try{
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://docs.opencv.org/4.9.0/opencv.js';
+      script.async = true;
+      const timeout = setTimeout(() => reject(new Error('OpenCV yükleme zaman aşımı')), 15000);
+      script.onload = () => {
+        clearTimeout(timeout);
+        if(window.cv && window.cv.onRuntimeInitialized !== undefined){
+          window.cv.onRuntimeInitialized = () => {
+            CV_READY = true;
+            CV_LOADING = false;
+            console.log('✓ OpenCV.js hazır - gelişmiş ön işleme aktif');
+            resolve();
+          };
+        } else {
+          CV_READY = !!window.cv;
+          CV_LOADING = false;
+          resolve();
+        }
+      };
+      script.onerror = () => {
+        clearTimeout(timeout);
+        CV_LOADING = false;
+        reject(new Error('OpenCV yüklenemedi'));
+      };
+      document.head.appendChild(script);
+    });
+    return true;
+  } catch(e){
+    CV_READY = false;
+    CV_LOADING = false;
+    console.warn('OpenCV yüklenemedi, basit ön işleme kullanılacak:', e);
+    return false;
+  }
+}
+
+/* OpenCV ile tam güç ön işleme: Gri → Parlama bastırma → Gürültü → CLAHE → Eğim düzeltme → Adaptif eşikleme */
+function preprocessWithOpenCV(canvas){
+  if(!window.cv || !CV_READY) return null;
+  try{
+    const src = cv.imread(canvas);
+    let work = src;
+    
+    /* 1. Gri tonlama */
+    try{
+      const gray = new cv.Mat();
+      cv.cvtColor(work, gray, cv.COLOR_RGBA2GRAY);
+      work.delete();
+      work = gray;
+    }catch(e){ console.warn('OpenCV gri tonlama hatası:', e); }
+    
+    /* 2. Parlama bastırma (inpainting) - parlak bölgeleri düzelt */
+    try{
+      const mask = new cv.Mat();
+      cv.threshold(work, mask, 235, 255, cv.THRESH_BINARY);
+      const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
+      cv.dilate(mask, mask, kernel);
+      const inpainted = new cv.Mat();
+      cv.inpaint(work, mask, inpainted, 4, cv.INPAINT_TELEA);
+      work.delete();
+      mask.delete();
+      kernel.delete();
+      work = inpainted;
+    }catch(e){ console.warn('OpenCV parlama bastırma hatası:', e); }
+    
+    /* 3. Gürültü azaltma - median blur */
+    try{
+      const blurred = new cv.Mat();
+      cv.medianBlur(work, blurred, 3);
+      work.delete();
+      work = blurred;
+    }catch(e){ console.warn('OpenCV gürültü azaltma hatası:', e); }
+    
+    /* 4. CLAHE kontrast artırma - düşük kontrast plakalarda kritik */
+    try{
+      const clahe = new cv.CLAHE(2.0, new cv.Size(8, 8));
+      const claheOut = new cv.Mat();
+      clahe.apply(work, claheOut);
+      work.delete();
+      work = claheOut;
+    }catch(e){ console.warn('OpenCV CLAHE hatası:', e); }
+    
+    /* 5. Eğim düzeltme - eğik çekilen plakaları düzelt */
+    try{
+      const edges = new cv.Mat();
+      cv.threshold(work, edges, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+      const contours = new cv.MatVector();
+      const hierarchy = new cv.Mat();
+      cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+      
+      let maxArea = 0, maxIdx = -1;
+      for(let i = 0; i < contours.size(); i++){
+        const area = cv.contourArea(contours.get(i));
+        if(area > maxArea){ maxArea = area; maxIdx = i; }
+      }
+      
+      if(maxIdx >= 0 && maxArea > work.cols * work.rows * 0.15){
+        const rect = cv.minAreaRect(contours.get(maxIdx));
+        let angle = rect.angle;
+        if(angle < -45) angle += 90;
+        
+        if(Math.abs(angle) > 1 && Math.abs(angle) <= 15){
+          const center = new cv.Point(work.cols / 2, work.rows / 2);
+          const M = cv.getRotationMatrix2D(center, angle, 1);
+          const rotated = new cv.Mat();
+          cv.warpAffine(work, rotated, M, new cv.Size(work.cols, work.rows), cv.INTER_LINEAR, cv.BORDER_REPLICATE);
+          work.delete();
+          M.delete();
+          work = rotated;
+        }
+      }
+      
+      edges.delete();
+      contours.delete();
+      hierarchy.delete();
+    }catch(e){ console.warn('OpenCV eğim düzeltme hatası:', e); }
+    
+    /* 6. Adaptif eşikleme - farklı ışık koşullarında iyi çalışır */
+    try{
+      const thresh = new cv.Mat();
+      cv.adaptiveThreshold(work, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 31, 15);
+      work.delete();
+      work = thresh;
+    }catch(e){ console.warn('OpenCV adaptif eşikleme hatası:', e); }
+    
+    /* Sonucu canvas'a çevir */
+    const output = document.createElement('canvas');
+    output.width = work.cols;
+    output.height = work.rows;
+    cv.imshow(output, work);
+    work.delete();
+    
+    return output;
+  }catch(e){
+    console.error('OpenCV ön işleme hatası:', e);
+    return null;
+  }
+}
+
+/* Hafif OpenCV varyantı - adaptif eşikleme olmadan, kontrastlı gri ton */
+function preprocessWithOpenCVLight(canvas){
+  if(!window.cv || !CV_READY) return null;
+  try{
+    const src = cv.imread(canvas);
+    let work = src;
+    
+    /* Gri tonlama */
+    try{
+      const gray = new cv.Mat();
+      cv.cvtColor(work, gray, cv.COLOR_RGBA2GRAY);
+      work.delete();
+      work = gray;
+    }catch(e){}
+    
+    /* Parlama bastırma */
+    try{
+      const mask = new cv.Mat();
+      cv.threshold(work, mask, 235, 255, cv.THRESH_BINARY);
+      const inpainted = new cv.Mat();
+      cv.inpaint(work, mask, inpainted, 4, cv.INPAINT_TELEA);
+      work.delete();
+      mask.delete();
+      work = inpainted;
+    }catch(e){}
+    
+    /* CLAHE - daha güçlü */
+    try{
+      const clahe = new cv.CLAHE(2.5, new cv.Size(8, 8));
+      const claheOut = new cv.Mat();
+      clahe.apply(work, claheOut);
+      work.delete();
+      work = claheOut;
+    }catch(e){}
+    
+    const output = document.createElement('canvas');
+    output.width = work.cols;
+    output.height = work.rows;
+    cv.imshow(output, work);
+    work.delete();
+    
+    return output;
+  }catch(e){
+    console.error('OpenCV Light hatası:', e);
+    return null;
+  }
+}
+
 /* GÜÇLÜ ÖN İŞLEME - Maksimum netlik için optimize edildi */
 function prep(src, rect, mode, scale, angle){
   const r = rect || [0,0,src.width,src.height];
@@ -2846,6 +3074,19 @@ function prep(src, rect, mode, scale, angle){
     x.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height);
   }
   if(mode==='raw') return c;
+  
+  /* OpenCV kullanılabiliyorsa öncelikle onu dene */
+  if(CV_READY && (mode==='opencv' || mode==='opencv-light' || mode==='otsu')){
+    let opencvResult = null;
+    if(mode==='opencv-light'){
+      opencvResult = preprocessWithOpenCVLight(c);
+    } else {
+      opencvResult = preprocessWithOpenCV(c);
+    }
+    if(opencvResult) return opencvResult;
+    /* OpenCV başarısız oldu, standart yönteme düş */
+  }
+  
   const im=x.getImageData(0,0,c.width,c.height), d=im.data, px=c.width*c.height;
   const hist=new Array(256).fill(0);
   for(let i=0;i<d.length;i+=4){ const g=(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114)|0; d[i]=d[i+1]=d[i+2]=g; hist[g]++; }
@@ -2899,7 +3140,8 @@ function preprocess(src, crop, otsu, scale){   /* geriye uyumlu imza */
 /* --- Kamera denetleyicisi --- */
 const Cam = {
   stream:null, facing:'environment', busy:false, engine:null, engineTried:false,
-  ctx:null, ctxMode:'scan', result:null, autoT:null,
+  ctx:null, ctxMode:'scan', result:null, autoT:null, torchAvailable:false, torchOn:false,
+  shootInProgress:false, lastShootTime:0, /* DEBOUNCE için */
   /* Okuma alanı ayarları - dar alan = hızlı okuma */
   cropArea: { top:36, height:28, lastHeight:28, startDist:0, startTop:0, startHeight:0 },
 
@@ -2909,37 +3151,86 @@ const Cam = {
   progOff(){ const b=$('#camProg'); if(b){ b.firstElementChild.style.width='0%'; b.style.display='none'; } },
   scanning(on){ $('#camSheet').classList.toggle('scanning',!!on); $('#camShot').disabled=!!on; },
 
-  /* Okuma alanını pinch ile daralt/genişlet */
+  /* GELÄ°ÅžMÄ°Åž OKUMA ALANI KONTROLÃ‡Ã‡Ã‡: Pinch-zoom, Drag, Resize */
   setupCropArea(){
     const guide = $('.cam-guide');
     if(!guide) return;
     
+    let touchMode = null; // 'drag', 'pinch', null
+    let dragStart = { x: 0, y: 0, top: 0 };
+    let pinchStart = { dist: 0, centerY: 0, top: 0, height: 0 };
+    
     guide.addEventListener('touchstart', (e) => {
-      if(e.touches.length === 2){
+      if(e.touches.length === 1){
+        // TEK PARMAK - SÜRÜKLEME MODU
         e.preventDefault();
+        touchMode = 'drag';
+        guide.classList.add('dragging');
+        
+        const touch = e.touches[0];
+        const viewRect = $('#camView').getBoundingClientRect();
+        
+        dragStart.y = touch.clientY;
+        dragStart.top = this.cropArea.top;
+        
+      } else if(e.touches.length === 2){
+        // İKİ PARMAK - PINCH ZOOM MODU
+        e.preventDefault();
+        touchMode = 'pinch';
         guide.classList.add('adjusting');
+        
         const dy = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
-        this.cropArea.startDist = dy;
-        this.cropArea.startHeight = this.cropArea.height;
-        this.cropArea.startTop = this.cropArea.top;
+        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const viewRect = $('#camView').getBoundingClientRect();
+        
+        pinchStart.dist = dy;
+        pinchStart.centerY = centerY;
+        pinchStart.height = this.cropArea.height;
+        pinchStart.top = this.cropArea.top;
       }
     }, {passive: false});
     
     guide.addEventListener('touchmove', (e) => {
-      if(e.touches.length === 2){
+      if(touchMode === 'drag' && e.touches.length === 1){
+        // SÜRÜKLEME - Overlay'i yukarı/aşağı taşı
         e.preventDefault();
+        
+        const touch = e.touches[0];
+        const viewRect = $('#camView').getBoundingClientRect();
+        
+        // Delta hesapla
+        const deltaY = touch.clientY - dragStart.y;
+        const deltaPercent = (deltaY / viewRect.height) * 100;
+        
+        // Yeni pozisyon
+        let newTop = dragStart.top + deltaPercent;
+        
+        // Sınırlar içinde tut
+        newTop = Math.max(2, Math.min(95 - this.cropArea.height, newTop));
+        
+        this.cropArea.top = newTop;
+        this.updateCropUI();
+        
+      } else if(touchMode === 'pinch' && e.touches.length === 2){
+        // PINCH - Overlay boyutunu değiştir ve merkezi koru
+        e.preventDefault();
+        
         const dy = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
         const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
         const viewRect = $('#camView').getBoundingClientRect();
-        const relativeCenter = ((centerY - viewRect.top) / viewRect.height) * 100;
         
-        /* Yükseklik değişimi */
-        const heightChange = ((dy - this.cropArea.startDist) / viewRect.height) * 100;
-        let newHeight = Math.max(8, Math.min(60, this.cropArea.startHeight - heightChange));
+        // Yükseklik değişimi
+        const heightChange = ((dy - pinchStart.dist) / viewRect.height) * 100;
+        let newHeight = Math.max(8, Math.min(70, pinchStart.height + heightChange));
         
-        /* Merkez sabit kalsın diye top'u ayarla */
-        let newTop = relativeCenter - (newHeight / 2);
-        newTop = Math.max(5, Math.min(85 - newHeight, newTop));
+        // Merkez değişimi - kullanıcı parmakları neredeyse oraya odaklan
+        const newCenterY = ((centerY - viewRect.top) / viewRect.height) * 100;
+        
+        // Merkezi koruyarak top hesapla
+        let newTop = newCenterY - (newHeight / 2);
+        
+        // Sınırlar içinde tut
+        newTop = Math.max(2, Math.min(95 - newHeight, newTop));
         
         this.cropArea.height = newHeight;
         this.cropArea.top = newTop;
@@ -2947,15 +3238,37 @@ const Cam = {
       }
     }, {passive: false});
     
-    guide.addEventListener('touchend', () => {
-      guide.classList.remove('adjusting');
-      this.cropArea.lastHeight = this.cropArea.height;
-      /* Dar alan tercih edilirse öğüt ver */
-      if(this.cropArea.height < 20){
-        guide.classList.add('narrow');
-        setTimeout(() => guide.classList.remove('narrow'), 3000);
+    guide.addEventListener('touchend', (e) => {
+      guide.classList.remove('adjusting', 'dragging');
+      
+      if(touchMode === 'drag'){
+        // Sürükleme tamamlandı
+        this.cropArea.lastHeight = this.cropArea.height;
+        toast('Okuma alanı konumlandı', 'ok');
+      } else if(touchMode === 'pinch'){
+        // Pinch tamamlandı
+        this.cropArea.lastHeight = this.cropArea.height;
+        
+        // Çok dar alan uyarısı
+        if(this.cropArea.height < 15){
+          toast('Çok dar alan - plaka tam sığmayabilir', 'warn');
+        } else if(this.cropArea.height > 55){
+          toast('Geniş alan - daha yavaş okuma', 'warn');
+        } else {
+          toast('Okuma alanı ayarlandı', 'ok');
+        }
       }
+      
+      touchMode = null;
     });
+    
+    guide.addEventListener('touchcancel', () => {
+      guide.classList.remove('adjusting', 'dragging');
+      touchMode = null;
+    });
+    
+    // İlk konumu ayarla
+    this.updateCropUI();
   },
   
   updateCropUI(){
@@ -3025,16 +3338,86 @@ const Cam = {
     }
     this.status('Kamera açılıyor…');
     this.ph('Kamera açılıyor…');
+    
+    /* OpenCV'yi arka planda tembel yükle (engellemiyor, paralel) */
+    if(!CV_READY && !CV_LOADING){
+      ensureOpenCV().then(success => {
+        if(success){
+          toast('Gelişmiş görüntü motoru yüklendi — plaka okuma daha net', 'ok');
+          this.status('Gelişmiş motor aktif — plakayı çerçeveye alın');
+        }
+      }).catch(e => {
+        console.warn('OpenCV yüklenemedi:', e);
+      });
+    }
+    
     try{
       this.stream=await navigator.mediaDevices.getUserMedia({
         video:{ 
-          facingMode:{ ideal:this.facing }, 
-          width:{ideal:1920}, 
-          height:{ideal:1080}
+          facingMode:{ ideal:this.facing },
+          /* ULTRA YÜKSEK ÇÖZÜNÜRLÜK - Maksimum netlik için */
+          width:{ min:1280, ideal:2560, max:3840 }, 
+          height:{ min:720, ideal:1440, max:2160 },
+          /* Görüntü kalitesi parametreleri */
+          aspectRatio: { ideal: 16/9 },
+          frameRate: { ideal: 30, max: 60 },
+          /* Ek optimizasyonlar */
+          focusMode: { ideal: 'continuous' },
+          exposureMode: { ideal: 'continuous' },
+          whiteBalanceMode: { ideal: 'continuous' }
         }, 
         audio:false 
       });
       const v=$('#camVideo'); v.srcObject=this.stream; v.style.display='block'; $('#camPh').style.display='none';
+      
+      /* Kamera track ayarları - maksimum netlik */
+      const tracks = this.stream.getVideoTracks();
+      if(tracks.length > 0){
+        const track = tracks[0];
+        try{
+          const capabilities = track.getCapabilities();
+          const constraints = {};
+          
+          /* Otomatik odak varsa etkinleştir */
+          if(capabilities.focusMode && capabilities.focusMode.includes('continuous')){
+            constraints.focusMode = 'continuous';
+          }
+          
+          /* Otomatik beyaz dengesi */
+          if(capabilities.whiteBalanceMode && capabilities.whiteBalanceMode.includes('continuous')){
+            constraints.whiteBalanceMode = 'continuous';
+          }
+          
+          /* Otomatik pozlama */
+          if(capabilities.exposureMode && capabilities.exposureMode.includes('continuous')){
+            constraints.exposureMode = 'continuous';
+          }
+          
+          /* Zoom varsa varsayılan seviyeye ayarla */
+          if(capabilities.zoom){
+            constraints.zoom = capabilities.zoom.min || 1;
+          }
+          
+          /* Torch (flaş ışığı) - karanlık ortamlar için */
+          if(capabilities.torch){
+            // Başlangıçta kapalı, gerekirse kullanıcı açar
+            constraints.torch = false;
+            // Torch butonunu göster
+            const torchBtn = $('#camTorch');
+            if(torchBtn){
+              torchBtn.style.display = 'flex';
+              this.torchAvailable = true;
+            }
+          }
+          
+          if(Object.keys(constraints).length > 0){
+            await track.applyConstraints({ advanced: [constraints] });
+            console.log('Kamera optimize edildi:', constraints);
+          }
+        }catch(e){
+          console.warn('Kamera ayarları uygulanamadı:', e);
+        }
+      }
       
       /* Video tıklamayla odaklanma özelliği */
       v.onclick = async (e) => {
@@ -3078,7 +3461,7 @@ const Cam = {
       if(shotBtn) shotBtn.disabled = false;
       if(switchBtn) switchBtn.disabled = false;
       if(focusBtn) focusBtn.disabled = false;
-      this.status('Plakayı çerçeveye alın — 2 parmakla çerçeveyi ayarlayın, odak için ekrana dokunun');
+      this.status('TEK PARMAK: Çerçeveyi taşı · İKİ PARMAK: Boyutlandır · DOKUN: Odaklan');
       if(P.autoCam) this.autoT=setTimeout(()=>{ if(this.stream) this.shoot(); }, 1500);
     }catch(e){
       console.error('Kamera hatası:', e);
@@ -3097,8 +3480,31 @@ const Cam = {
   ph(html){ const p=$('#camPh'); p.innerHTML=html; p.style.display='block'; $('#camVideo').style.display='none'; },
   stopStream(){
     clearTimeout(this.autoT); this.autoT=null;
-    if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
-    const v=$('#camVideo'); if(v) v.srcObject=null;
+    if(this.stream){ 
+      try{
+        this.stream.getTracks().forEach(t=>t.stop()); 
+      }catch(e){
+        console.warn('Stream stop error:', e);
+      }
+      this.stream=null; 
+    }
+    const v=$('#camVideo'); 
+    if(v) {
+      try{
+        v.srcObject=null;
+      }catch(e){
+        console.warn('Video srcObject clear error:', e);
+      }
+    }
+    
+    /* State reset */
+    this.torchOn = false;
+    this.torchAvailable = false;
+    this.shootInProgress = false;
+    
+    /* UI reset */
+    const torchBtn = $('#camTorch');
+    if(torchBtn) torchBtn.style.display = 'none';
   },
   close(){
     this.stopStream();
@@ -3107,21 +3513,140 @@ const Cam = {
     this.scanning(false); this.ctx=null; this.reset(); this.warn('');
   },
 
-  /* ---- çek ---- */
+  /* ---- ULTRA GÜÇ ÇEKİM - Çoklu kare yakala, en iyisini seç + ROCK-SOLID STATE MANAGEMENT ---- */
   async shoot(){
-    if(this.busy) return;
+    /* ==================== KRİTİK KORUMA KATMANLARI ==================== */
+    
+    /* 1. DEBOUNCE - Çift tıklama engelleme (500ms) */
+    const now = Date.now();
+    if(now - this.lastShootTime < 500){
+      console.log('Debounce: Çok hızlı tıklama engellendi');
+      return;
+    }
+    this.lastShootTime = now;
+    
+    /* 2. BUSY CHECK - Şu an işlem yapılıyorsa engelle */
+    if(this.busy || this.shootInProgress){
+      toast('İşlem devam ediyor...', 'warn');
+      console.log('Busy check: Zaten çekim/işlem yapılıyor');
+      return;
+    }
+    
+    /* 3. VIDEO CHECK - Video stream kontrol */
     const v=$('#camVideo');
-    if(!v || !v.videoWidth){ toast('Kamera görüntüsü yok','err'); return; }
-    const raw=document.createElement('canvas'); raw.width=v.videoWidth; raw.height=v.videoHeight;
-    raw.getContext('2d').drawImage(v,0,0,raw.width,raw.height);
-    sfx.shutter(); buzz(20);
-    this.flash();
+    if(!v || !v.videoWidth || !v.videoHeight){
+      toast('Kamera görüntüsü hazır değil','err');
+      this.status('Kamera başlatılıyor...', true);
+      console.error('Video check: Video boyutu yok');
+      return;
+    }
     
-    /* Kullanıcının ayarladığı dar alanı göster */
-    const cropRect = this.getCropRect(raw.width, raw.height);
-    this.userCropRect = cropRect;
+    /* 4. STREAM CHECK - Stream aktif mi */
+    if(!this.stream){
+      toast('Kamera bağlantısı kopmuş','err');
+      this.status('Kamera yeniden başlatılıyor...', true);
+      console.error('Stream check: Stream yok');
+      await this.start(); // Yeniden başlat
+      return;
+    }
     
-    await this.read(raw);
+    /* ==================== STATE SET: SHOOTING ==================== */
+    this.shootInProgress = true;
+    $('#camShot').disabled = true;
+    $('#camShot').style.opacity = '0.5';
+    
+    try {
+      /* ÇOKLU KARE YAKALAMA - En net kareyi seç (burst mode) */
+      const captureFrames = async (count = 3) => {
+        const frames = [];
+        this.status(`Kare yakalanıyor (${count} deneme)...`);
+        
+        for(let i = 0; i < count; i++){
+          try{
+            const canvas = document.createElement('canvas');
+            canvas.width = v.videoWidth;
+            canvas.height = v.videoHeight;
+            const ctx = canvas.getContext('2d');
+            
+            if(!ctx){
+              console.error(`Frame ${i+1}: Canvas context alınamadı`);
+              continue;
+            }
+            
+            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+            
+            /* Kare kalitesini değerlendir */
+            const quality = imageQuality(canvas);
+            
+            if(quality){
+              frames.push({ canvas, quality });
+              console.log(`Frame ${i+1}: Sharp=${quality.sharp.toFixed(2)}, Mean=${quality.mean.toFixed(2)}`);
+            } else {
+              console.warn(`Frame ${i+1}: Kalite değerlendirilemedi`);
+            }
+            
+            /* Kareler arası kısa bekleme (stabilizasyon) */
+            if(i < count - 1) await new Promise(resolve => setTimeout(resolve, 100));
+            
+          }catch(e){
+            console.error(`Frame ${i+1} yakalama hatası:`, e);
+          }
+        }
+        
+        /* En az 1 kare başarılı olmalı */
+        if(frames.length === 0){
+          throw new Error('Hiçbir kare yakalanamadı');
+        }
+        
+        /* En yüksek netliğe sahip kareyi seç */
+        frames.sort((a, b) => b.quality.sharp - a.quality.sharp);
+        const best = frames[0];
+        console.log(`En iyi kare seçildi: Sharp=${best.quality.sharp.toFixed(2)}`);
+        
+        return best.canvas;
+      };
+      
+      this.status('En net kare yakalanıyor…');
+      const raw = await captureFrames(3);
+      
+      /* Başarılı - Feedback */
+      sfx.shutter(); 
+      buzz(20);
+      this.flash();
+      
+      /* Kullanıcının ayarladığı dar alanı göster */
+      const cropRect = this.getCropRect(raw.width, raw.height);
+      this.userCropRect = cropRect;
+      
+      /* Okuma işlemine geç */
+      await this.read(raw);
+      
+    } catch(error) {
+      /* ==================== HATA YÖNETİMİ ==================== */
+      console.error('Shoot error:', error);
+      
+      this.status('Çekim başarısız: ' + (error.message || 'Bilinmeyen hata'), true);
+      toast('Fotoğraf çekilemedi: ' + (error.message || 'Tekrar deneyin'), 'err');
+      
+      /* Recovery: State temizle */
+      this.shootInProgress = false;
+      $('#camShot').disabled = false;
+      $('#camShot').style.opacity = '1';
+      
+      /* Stream kontrol - Kopmuşsa yeniden başlat */
+      if(!this.stream || !this.stream.active){
+        console.log('Stream kopmuş, yeniden başlatılıyor...');
+        setTimeout(() => this.start(), 1000);
+      }
+      
+    } finally {
+      /* ==================== STATE RESET: READY ==================== */
+      setTimeout(() => {
+        this.shootInProgress = false;
+        $('#camShot').disabled = false;
+        $('#camShot').style.opacity = '1';
+      }, 300); // Kısa gecikme - UI stabilizasyonu
+    }
   },
   flash(){
     const f=$('#camView');
@@ -3131,31 +3656,71 @@ const Cam = {
     setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),320); },40);
   },
 
-  /* ---- okuma --- */
+  /* ---- OKUMA - ROCK-SOLID ERROR HANDLING --- */
   async read(raw){
-    this.busy=true; this.scanning(true);
+    /* ==================== STATE CHECK ==================== */
+    if(this.busy){
+      console.warn('Read: Already busy');
+      return;
+    }
+    
+    /* ==================== STATE SET: READING ==================== */
+    this.busy=true; 
+    this.scanning(true);
     this.status('Plaka aranıyor…');
     this.prog(4);
+    
     const texts=[]; let cands=[]; let regions=[];
+    
     try{
+      /* Görüntü kalite kontrolü */
       const q=imageQuality(raw);
       this.quality=q;
-      if(q && q.mean<52) this.status('Görüntü karanlık — plakayı aydınlatın');
-      else if(q && q.sharp<11) this.status('Görüntü bulanık — telefonu sabit tutun');
+      
+      if(!q){
+        throw new Error('Görüntü kalitesi değerlendirilemedi');
+      }
+      
+      console.log(`Görüntü kalitesi: Mean=${q.mean.toFixed(1)}, Sharp=${q.sharp.toFixed(1)}`);
+      
+      if(q.mean<52){
+        this.status('Görüntü karanlık — plakayı aydınlatın veya flaşı açın');
+        toast('Çok karanlık - flaşı deneyin', 'warn');
+      } else if(q.sharp<11){
+        this.status('Görüntü bulanık — telefonu sabit tutun');
+        toast('Bulanık görüntü - sabit tutun', 'warn');
+      }
       
       /* GÜÇLÜ OKUMA STRATEJİSİ */
       if(this.userCropRect && this.cropArea.height < 35){
         this.status('Seçili dar alan taranıyor — maksimum doğruluk…');
         regions = [{ rect: this.userCropRect, light: true, fit: 100, angle: 0, fromUser: true }];
       } else {
+        this.status('Plaka bölgesi algılanıyor…');
         regions=findPlateRegions(raw);
       }
       const rects=[];
       
-      /* ÇOK KATMANLI OKUMA MOTİFLERİ - En güçlüden en güvenilire */
-      const STRONG=[ {mode:'otsu',psm:'7'}, {mode:'sharp',psm:'7'}, {mode:'stretch',psm:'6'} ];
-      const ROBUST=[ {mode:'otsu',psm:'6'}, {mode:'sharp',psm:'6'} ];
-      const FALLBACK=[ {mode:'otsu',psm:'13'}, {mode:'stretch',psm:'13'} ];
+      /* ÇOK KATMANLI OKUMA MOTİFLERİ - En güçlüden en güvenilire + OpenCV */
+      /* Cihaz performansına göre varyant sayısını ayarla */
+      const deviceCores = navigator.hardwareConcurrency || 4;
+      const isSlowDevice = deviceCores <= 2;
+      
+      const STRONG = CV_READY && !isSlowDevice 
+        ? [ {mode:'opencv',psm:'7'}, {mode:'otsu',psm:'7'}, {mode:'opencv-light',psm:'7'}, {mode:'sharp',psm:'7'}, {mode:'stretch',psm:'6'} ]
+        : CV_READY
+        ? [ {mode:'opencv',psm:'7'}, {mode:'otsu',psm:'7'}, {mode:'sharp',psm:'7'} ]
+        : [ {mode:'otsu',psm:'7'}, {mode:'sharp',psm:'7'}, {mode:'stretch',psm:'6'} ];
+        
+      const ROBUST = CV_READY && !isSlowDevice
+        ? [ {mode:'opencv',psm:'6'}, {mode:'otsu',psm:'6'}, {mode:'opencv-light',psm:'6'}, {mode:'sharp',psm:'6'} ]
+        : CV_READY
+        ? [ {mode:'opencv',psm:'6'}, {mode:'otsu',psm:'6'}, {mode:'sharp',psm:'6'} ]
+        : [ {mode:'otsu',psm:'6'}, {mode:'sharp',psm:'6'} ];
+        
+      const FALLBACK = CV_READY
+        ? [ {mode:'opencv-light',psm:'13'}, {mode:'otsu',psm:'13'}, {mode:'stretch',psm:'13'} ]
+        : [ {mode:'otsu',psm:'13'}, {mode:'stretch',psm:'13'} ];
       
       if(regions.length && regions[0].fromUser){
         /* Kullanıcı dar alan = en agresif okuma */
@@ -3219,18 +3784,26 @@ const Cam = {
       const deadline=Date.now()+9000;
       const votes={};                    /* plaka -> kaç bağımsız denemede çıktı */
       const outOfTime=()=> Date.now()>deadline && cands.length>0;
-      /* GÜÇLÜ OKUMA PARAMETRELERİ
-         - DPI: 320 (300'den daha keskin)
-         - Whitelist: Sadece plaka karakterleri
+      /* ULTRA GÜÇ OKUMA PARAMETRELERİ - Maksimum doğruluk
+         - DPI: 360 (320'den daha keskin, profesyonel tarama kalitesi)
+         - Whitelist: Sadece TR plaka karakterleri (İ, Ş, Ç hariç)
          - Preserve spaces: Harf gruplarını ayır
-         - Load system dawg: false (gereksiz kelime kontrolü yok) */
+         - Dictionary: Kapalı (yanlış düzeltmeler önlenir)
+         - Edge detection: Açık (sınır algılama)
+         - Minimum char height: Optimize edilmiş */
       const BASE_PARAMS={ 
-        tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        tessedit_char_whitelist:'0123456789ABCDEFGHJKLMNOPRSTUVYZ',
         preserve_interword_spaces:'1', 
-        user_defined_dpi:'320',
+        user_defined_dpi:'360',
         load_system_dawg:'0',
         load_freq_dawg:'0',
-        tessedit_enable_dict_correction:'0'
+        tessedit_enable_dict_correction:'0',
+        edges_use_new_outline_complexity:'1',
+        textord_heavy_nr:'1',
+        textord_noise_rejwords:'1',
+        textord_noise_rejrows:'1',
+        tessedit_char_blacklist:'IOÇŞİĞÜöçşığü',
+        classify_bln_numeric_mode:'1'
       };
       for(const item of rects){
         if(outOfTime()) break;
@@ -3282,15 +3855,59 @@ const Cam = {
       if(!cands.length && this.rawText) cands=plateCandidates(this.rawText, 60);
       this.lastErr=lastErr;
       this.prog(100);
+      
     }catch(e){
-      this.progOff(); this.busy=false; this.scanning(false);
+      /* ==================== HATA YÖNETİMİ - ROCK-SOLID ==================== */
+      console.error('Read error:', e);
+      
+      this.progOff(); 
+      this.busy=false; 
+      this.scanning(false);
+      
+      /* Hata türüne göre mesaj */
+      let errorMsg = 'Okuma yapılamadı';
+      let userMsg = 'Tekrar deneyin';
+      
+      if(e && e.message){
+        if(e.message.includes('tanıma kütüphanesi')){
+          errorMsg = 'Tanıma motoru yüklenemedi';
+          userMsg = 'İnternet bağlantınızı kontrol edin';
+        } else if(e.message.includes('timeout') || e.message.includes('zaman aşımı')){
+          errorMsg = 'İşlem zaman aşımına uğradı';
+          userMsg = 'Daha net bir fotoğraf çekin';
+        } else if(e.message.includes('kalitesi')){
+          errorMsg = 'Görüntü kalitesi yetersiz';
+          userMsg = 'Daha yakından veya aydınlık yerde çekin';
+        } else {
+          errorMsg = e.message;
+        }
+      }
+      
+      this.say(errorMsg);
+      this.status(userMsg, true);
+      toast(errorMsg + ' - ' + userMsg, 'err');
+      
+      /* UI göster - kullanıcı tekrar deneyebilsin */
       this.show();
-      this.say('Okuma yapılamadı: '+(e&&e.message?e.message:e));
-      this.status('Tanıma motoru hazır değil', true);
+      
+      /* Recovery check */
+      if(!this.engineTried){
+        console.log('Engine hiç denenmemiş, worker başlatılıyor...');
+        try{
+          await this.worker(() => {});
+        }catch(workerError){
+          console.error('Worker başlatma hatası:', workerError);
+          this.status('Tanıma motoru kullanılamıyor - Elle girin', true);
+        }
+      }
+      
       return;
     }
+    
+    /* ==================== STATE RESET: READY ==================== */
     setTimeout(()=>{ this.progOff(); }, 500);
-    this.busy=false; this.scanning(false);
+    this.busy=false; 
+    this.scanning(false);
     this.deliver(cands, texts, regions);
   },
 
@@ -3398,7 +4015,7 @@ const Cam = {
   },
   show(){ $('#camOut').classList.add('show'); $('#camActions').classList.add('show'); },
 
-  /* ---- tanıma motoru (bir kez kurulur, sonra yeniden kullanılır) ---- */
+  /* ---- ULTRA GÜÇ TANIMA MOTORU (bir kez kurulur, sonra yeniden kullanılır) ---- */
   async worker(onP){
     if(this.engine) return this.engine;
     if(!window.Tesseract){
@@ -3410,13 +4027,37 @@ const Cam = {
         setTimeout(()=>{ if(!window.Tesseract) rej(new Error('zaman aşımı')); }, 60000);
       });
     }
-    this.status('Tanıma motoru hazırlanıyor…');
+    this.status('Gelişmiş tanıma motoru hazırlanıyor…');
     this.prog(10);
+    
+    /* Tesseract Worker - OEM 1 (LSTM neural network) maksimum doğruluk için */
     const w = await Tesseract.createWorker('eng', 1, {
-      logger:m=>{ if(m.status==='recognizing text' && onP) onP(m.progress||0); } });
-    try{ await w.setParameters({
-      tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', tessedit_pageseg_mode:'7' }); }catch(e){}
-    this.engine=w; this.engineTried=true;
+      logger: m => { if(m.status==='recognizing text' && onP) onP(m.progress||0); },
+      errorHandler: err => console.warn('Tesseract uyarı:', err)
+    });
+    
+    /* BAŞLANGIÇ PARAMETRELERİ - Plaka okumaya özel optimize */
+    try{ 
+      await w.setParameters({
+        tessedit_char_whitelist: '0123456789ABCDEFGHJKLMNOPRSTUVYZ',
+        tessedit_pageseg_mode: '7',
+        /* LSTM engine kullan (en doğru) */
+        tessedit_ocr_engine_mode: '1',
+        /* Gürültü filtreleme */
+        textord_noise_rejwords: '1',
+        textord_noise_rejrows: '1',
+        /* Karakter yüksekliği sınırları */
+        textord_min_xheight: '10',
+        /* Kenar algılama */
+        edges_use_new_outline_complexity: '1',
+        /* Sayısal mod - plakalar için kritik */
+        classify_bln_numeric_mode: '1'
+      }); 
+    }catch(e){ console.warn('Tesseract parametre hatası:', e); }
+    
+    this.engine = w;
+    this.engineTried = true;
+    this.status('Motor hazır - plaka okumaya başlayabilirsiniz');
     return w;
   },
   releaseEngine(){
@@ -3440,10 +4081,35 @@ function bestCandidate(list){
   return b;
 }
 
-/* ---- düğmeler ---- */
-$('#camShot').onclick=()=>{ clearTimeout(Cam.autoT); Cam.shoot(); };
+/* ---- BUTONLAR - ROCK-SOLID EVENT HANDLERS ---- */
+$('#camShot').onclick=()=>{ 
+  clearTimeout(Cam.autoT); 
+  
+  /* Visual feedback - butona basıldığını göster */
+  const btn = $('#camShot');
+  btn.style.transform = 'scale(0.92)';
+  setTimeout(() => { btn.style.transform = 'scale(1)'; }, 150);
+  
+  Cam.shoot(); 
+};
 $('#camClose').onclick=()=>Cam.close();
 $('#camSwitch').onclick=()=>{ Cam.facing = Cam.facing==='environment'?'user':'environment'; Cam.start(); };
+$('#camTorch').onclick=async ()=>{ 
+  if(!Cam.stream || !Cam.torchAvailable) return;
+  const tracks = Cam.stream.getVideoTracks();
+  if(tracks.length === 0) return;
+  const track = tracks[0];
+  try{
+    Cam.torchOn = !Cam.torchOn;
+    await track.applyConstraints({ advanced: [{ torch: Cam.torchOn }] });
+    $('#camTorchLabel').textContent = Cam.torchOn ? 'Flaş Açık' : 'Flaş';
+    $('#camTorch').style.opacity = Cam.torchOn ? '1' : '0.7';
+    toast(Cam.torchOn ? 'Flaş açıldı' : 'Flaş kapatıldı', 'ok');
+  }catch(e){
+    console.error('Torch ayarı başarısız:', e);
+    toast('Flaş değiştirilemedi', 'err');
+  }
+};
 $('#camType').onclick=()=>{ const m=(Cam.ctx&&Cam.ctx.mode)||Cam.ctxMode; Cam.close(); plateTypeDialog(m); };
 $('#camAgain').onclick=()=>{ Cam.reset(); Cam.status('Plakayı çerçeveye alın'); };
 $('#camGallery').onclick=()=>{ $('#camFile').click(); };
@@ -4306,7 +4972,7 @@ function paintPrefs(){
   if(st) st.textContent = SR ? (navigator.mediaDevices? 'Hazır — dokunup konuşun' : 'Tarayıcı izin vermiyor') : 'Bu tarayıcı desteklemiyor';
   const cn=$('#camNote');
   if(cn) cn.textContent = (navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)
-    ? 'Kamera hazır. Plaka tanıma ilk kullanımda metin tanıma kütüphanesini internetten indirir (sizi rahatsız etmez).'
+    ? 'Kamera hazır. Ultra yüksek çözünürlük (2560x1440), OpenCV görüntü işleme, çoklu kare yakalama ve gelişmiş OCR ile maksimum doğruluk sağlanır. İlk kullanımda tanıma kütüphanesi otomatik indirilir.'
     : 'Bu tarayıcı kamera erişimine izin vermiyor — plakayı elle girebilir ya da galeriden fotoğraf okutabilirsiniz.';
   const wv=$('#waVal'); if(wv) wv.textContent = P.waLink? 'tanımlı' : '—';
   const ss=$('#syncState');
