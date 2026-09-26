@@ -3386,6 +3386,10 @@ const Cam = {
     let pinchStart = { dist: 0, centerY: 0, top: 0, height: 0 };
     
     guide.addEventListener('touchstart', (e) => {
+      // Panel açıksa çerçeve touch'ını engelle
+      const panel = $('#camPanel');
+      if(panel && panel.classList.contains('show')) return;
+      
       if(e.touches.length === 1){
         // TEK PARMAK - SÜRÜKLEME MODU
         e.preventDefault();
@@ -3416,6 +3420,10 @@ const Cam = {
     }, {passive: false});
     
     guide.addEventListener('touchmove', (e) => {
+      // Panel açıksa çerçeve touch'ını engelle
+      const panel = $('#camPanel');
+      if(panel && panel.classList.contains('show')) return;
+      
       if(touchMode === 'drag' && e.touches.length === 1){
         // SÜRÜKLEME - Overlay'i yukarı/aşağı taşı
         e.preventDefault();
@@ -3652,6 +3660,10 @@ const Cam = {
       let initialDistance = 0;
       
       v.addEventListener('touchstart', (e) => {
+        // Panel açıksa video touch'ını engelle
+        const panel = $('#camPanel');
+        if(panel && panel.classList.contains('show')) return;
+        
         if(e.touches.length === 2){
           e.preventDefault();
           initialDistance = Math.hypot(
@@ -3663,6 +3675,10 @@ const Cam = {
       }, { passive: false });
       
       v.addEventListener('touchmove', async (e) => {
+        // Panel açıksa video touch'ını engelle
+        const panel = $('#camPanel');
+        if(panel && panel.classList.contains('show')) return;
+        
         if(e.touches.length === 2){
           e.preventDefault();
           const distance = Math.hypot(
@@ -4573,17 +4589,38 @@ $('#zoomSlider').oninput=async (e)=>{
   const zoom = (val / 10).toFixed(1);
   $('#zoomValue').textContent = zoom + 'x';
   
-  const tracks = Cam.stream ? Cam.stream.getVideoTracks() : [];
-  if(tracks.length > 0){
-    const track = tracks[0];
-    const cap = track.getCapabilities();
-    if(cap.zoom){
-      try{
-        const zoomValue = cap.zoom.min + (cap.zoom.max - cap.zoom.min) * (val - 10) / 30;
-        await track.applyConstraints({ advanced: [{ zoom: zoomValue }] });
-      }catch(e){
-        console.warn('Zoom ayarı başarısız:', e);
-      }
+  if(!Cam.stream){
+    console.warn('Kamera stream yok');
+    return;
+  }
+  
+  const tracks = Cam.stream.getVideoTracks();
+  if(tracks.length === 0){
+    console.warn('Video track yok');
+    return;
+  }
+  
+  const track = tracks[0];
+  const cap = track.getCapabilities();
+  
+  console.log('Zoom capabilities:', cap.zoom);
+  
+  if(cap.zoom){
+    try{
+      const zoomValue = cap.zoom.min + (cap.zoom.max - cap.zoom.min) * (val - 10) / 30;
+      console.log('Zoom değeri:', zoomValue);
+      await track.applyConstraints({ advanced: [{ zoom: zoomValue }] });
+      console.log('Zoom uygulandı:', zoomValue);
+    }catch(e){
+      console.error('Zoom ayarı başarısız:', e);
+      toast('Zoom desteklenmiyor', 'err');
+    }
+  }else{
+    console.warn('Zoom özelliği desteklenmiyor');
+    // CSS transform ile alternatif zoom
+    const video = $('#camVideo');
+    if(video){
+      video.style.transform = `scale(${zoom})`;
     }
   }
 };
