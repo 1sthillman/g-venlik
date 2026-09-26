@@ -1,5 +1,6 @@
 name: Deploy to GitHub Pages
 
+# Updated workflow with OCR config generation
 on:
   push:
     branches: [ main ]
