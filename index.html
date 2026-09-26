@@ -1170,6 +1170,36 @@ body.cam-on{ overflow:hidden; }
   </div>
 </div>
 
+<!-- ===== ADRES YÖNETİCİSİ (tam ekran) ===== -->
+<div class="page" id="siteMgr">
+  <div class="page-bar">
+    <button class="page-back" id="siteMgrBack" type="button" aria-label="Geri">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="page-t">Adresler</div>
+    <button class="page-act" id="siteMgrReset" type="button">Sıfırla</button>
+  </div>
+  <div class="page-body" id="siteMgrBody"></div>
+  <div class="page-foot">
+    <button class="btn btn-primary" id="siteMgrAdd" type="button">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Yeni blok ekle
+    </button>
+  </div>
+</div>
+
+<!-- ===== YARDIM / SSS (tam ekran) ===== -->
+<div class="page" id="helpPage">
+  <div class="page-bar">
+    <button class="page-back" id="helpBack" type="button" aria-label="Geri">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="page-t" id="helpTitle">Yardım</div>
+    <div style="width:44px"></div>
+  </div>
+  <div class="page-body" id="helpBody"></div>
+</div>
+
 <!-- ===== kamera / plaka okutucu ===== -->
 <div id="camSheet">
   <div class="cam-top">
@@ -4197,7 +4227,11 @@ function siteCard(site, OVR){
   el.querySelector('[data-a="units"]').onclick=()=>editUnitsForm(site);
   el.querySelector('[data-a="pos"]').onclick=()=>{
     closeSiteMgr();
-    if(site.box){ toast(site.name+' planda zaten işaretli','ok'); return; }
+    /* Yeniden konumlandırmaya izin ver */
+    if(site.box){ 
+      const ok = await ask('Yeniden konumlandır?', site.name+' planda zaten işaretli. Yeni konum belirlemek istiyor musunuz?');
+      if(!ok) return;
+    }
     setTab('map'); placing=site.id; toast('Plan üzerinde bloğun yerine dokunun','ok');
   };
   el.querySelector('[data-a="hide"]').onclick=async ()=>{
