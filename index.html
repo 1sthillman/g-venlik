@@ -3866,16 +3866,12 @@ const Cam = {
       return OCR_CONFIG.apiKeys;
     }
     
-    // GitHub Pages Fallback - ocr-config.js yoksa bu key'leri kullan
-    // ⚠️ KULLANICILAR: Kendi key'lerinizi ocr-config.js'ye ekleyin!
-    console.warn('⚠️ ocr-config.js bulunamadı, fallback key kullanılıyor');
-    console.warn('📝 Kendi API key\'lerinizi kullanmak için: cp ocr-config.example.js ocr-config.js');
+    // Config yok - kullanıcı kendi key'lerini eklemelidir
+    console.error('❌ OCR_CONFIG bulunamadı!');
+    console.error('📝 Çözüm: cp ocr-config.example.js ocr-config.js');
+    console.error('🔑 API key almak için: https://ocr.space/ocrapi');
     
-    return [
-      'K81442206688957',  // Fallback Key 1
-      'K83546183188957',  // Fallback Key 2
-      'K83515335988957'   // Fallback Key 3
-    ];
+    return []; // Boş array - OCR çalışmayacak, Tesseract devreye girecek
   },
   currentKeyIndex: 0,
   
@@ -4003,19 +3999,23 @@ const Cam = {
       }
     }
     
-    /* Plaka yüksekliği: genelde görüntü yüksekliğinin %15-30'u */
-    const plateHeight = Math.floor(h * 0.25);
-    const plateWidth = Math.floor(w * 0.7); // Plakanın %70'ini al (kenarları at)
+    /* Plaka boyutları - DAHA BÜYÜK kırpma (OCR için önemli) */
+    const plateHeight = Math.max(100, Math.floor(h * 0.35)); // Minimum 100px, maksimum %35
+    const plateWidth = Math.max(300, Math.floor(w * 0.75));  // Minimum 300px, maksimum %75
     
     /* Merkezi plaka bölgesi */
-    const top = Math.max(0, centerY - Math.floor(plateHeight / 2));
-    const left = Math.floor((w - plateWidth) / 2);
+    const top = Math.max(0, Math.min(h - plateHeight, centerY - Math.floor(plateHeight / 2)));
+    const left = Math.max(0, Math.floor((w - plateWidth) / 2));
     
     /* Kırpılmış canvas oluştur */
     const cropped = document.createElement('canvas');
     cropped.width = plateWidth;
     cropped.height = plateHeight;
     const croppedCtx = cropped.getContext('2d');
+    
+    /* Yüksek kaliteli resize */
+    croppedCtx.imageSmoothingEnabled = true;
+    croppedCtx.imageSmoothingQuality = 'high';
     
     croppedCtx.drawImage(
       canvas,

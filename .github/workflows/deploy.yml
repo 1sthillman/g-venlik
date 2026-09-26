@@ -1,0 +1,55 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Create OCR Config from Secrets
+        run: |
+          cat > ocr-config.js << 'EOF'
+          // OCR.space API Configuration - AUTO-GENERATED
+          const OCR_CONFIG = {
+            apiKeys: [
+              '${{ secrets.OCR_KEY_1 }}',
+              '${{ secrets.OCR_KEY_2 }}',
+              '${{ secrets.OCR_KEY_3 }}'
+            ],
+            apiUrl: 'https://api.ocr.space/parse/image',
+            totalCapacity: {
+              monthly: 75000,
+              daily: 2500,
+              hourly: 104
+            }
+          };
+          if(typeof window !== 'undefined'){
+            window.OCR_CONFIG = OCR_CONFIG;
+          }
+          if(typeof module !== 'undefined' && module.exports){
+            module.exports = OCR_CONFIG;
+          }
+          EOF
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
