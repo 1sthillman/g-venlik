@@ -1341,19 +1341,26 @@ body.cam-on{ overflow:hidden; }
   </div>
 
   <div class="cam-bar">
+    <!-- Sol: Yaz butonu -->
     <button class="cam-side" id="camType" type="button">
       <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
       <span>Yaz</span>
     </button>
+    
+    <!-- Ortada: Fotoğraf çekme butonu -->
     <button class="shutter" id="camShot" type="button" title="Çek" aria-label="Çek"><i></i></button>
-    <button class="cam-side" id="camTorch" type="button" style="display:none;">
-      <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v4M13 2v4M12 6L8 12h8L12 6zM8 12l2 10h4l2-10"/></svg></span>
-      <span id="camTorchLabel">Flaş</span>
-    </button>
-    <button class="cam-side" id="camSwitch" type="button">
-      <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/></svg></span>
-      <span>Çevir</span>
-    </button>
+    
+    <!-- Sağda: Flaş ve Çevir yan yana -->
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="cam-side" id="camTorch" type="button" style="display:none;">
+        <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v4M13 2v4M12 6L8 12h8L12 6zM8 12l2 10h4l2-10"/></svg></span>
+        <span id="camTorchLabel">Flaş</span>
+      </button>
+      <button class="cam-side" id="camSwitch" type="button">
+        <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/></svg></span>
+        <span>Çevir</span>
+      </button>
+    </div>
   </div>
 </div>
 <input type="file" id="camFile" accept="image/*" style="display:none">
@@ -3556,58 +3563,20 @@ const Cam = {
     $('#camShot').style.opacity = '0.5';
     
     try {
-      /* ÇOKLU KARE YAKALAMA - En net kareyi seç (burst mode) */
-      const captureFrames = async (count = 3) => {
-        const frames = [];
-        this.status(`Kare yakalanıyor (${count} deneme)...`);
-        
-        for(let i = 0; i < count; i++){
-          try{
-            const canvas = document.createElement('canvas');
-            canvas.width = v.videoWidth;
-            canvas.height = v.videoHeight;
-            const ctx = canvas.getContext('2d');
-            
-            if(!ctx){
-              console.error(`Frame ${i+1}: Canvas context alınamadı`);
-              continue;
-            }
-            
-            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-            
-            /* Kare kalitesini değerlendir */
-            const quality = imageQuality(canvas);
-            
-            if(quality){
-              frames.push({ canvas, quality });
-              console.log(`Frame ${i+1}: Sharp=${quality.sharp.toFixed(2)}, Mean=${quality.mean.toFixed(2)}`);
-            } else {
-              console.warn(`Frame ${i+1}: Kalite değerlendirilemedi`);
-            }
-            
-            /* Kareler arası kısa bekleme (stabilizasyon) */
-            if(i < count - 1) await new Promise(resolve => setTimeout(resolve, 100));
-            
-          }catch(e){
-            console.error(`Frame ${i+1} yakalama hatası:`, e);
-          }
-        }
-        
-        /* En az 1 kare başarılı olmalı */
-        if(frames.length === 0){
-          throw new Error('Hiçbir kare yakalanamadı');
-        }
-        
-        /* En yüksek netliğe sahip kareyi seç */
-        frames.sort((a, b) => b.quality.sharp - a.quality.sharp);
-        const best = frames[0];
-        console.log(`En iyi kare seçildi: Sharp=${best.quality.sharp.toFixed(2)}`);
-        
-        return best.canvas;
-      };
+      /* HIZLI TEK KARE YAKALAMA - Burst mode kaldırıldı */
+      this.status('Fotoğraf çekiliyor...');
       
-      this.status('En net kare yakalanıyor…');
-      const raw = await captureFrames(3);
+      const canvas = document.createElement('canvas');
+      canvas.width = v.videoWidth;
+      canvas.height = v.videoHeight;
+      const ctx = canvas.getContext('2d');
+      
+      if(!ctx){
+        throw new Error('Canvas context alınamadı');
+      }
+      
+      ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+      console.log(`Kare yakalandı: ${canvas.width}x${canvas.height}`);
       
       /* Başarılı - Feedback */
       sfx.shutter(); 
@@ -3615,11 +3584,11 @@ const Cam = {
       this.flash();
       
       /* Kullanıcının ayarladığı dar alanı göster */
-      const cropRect = this.getCropRect(raw.width, raw.height);
+      const cropRect = this.getCropRect(canvas.width, canvas.height);
       this.userCropRect = cropRect;
       
       /* Okuma işlemine geç */
-      await this.read(raw);
+      await this.read(canvas);
       
     } catch(error) {
       /* ==================== HATA YÖNETİMİ ==================== */
@@ -3691,106 +3660,57 @@ const Cam = {
         toast('Bulanık görüntü - sabit tutun', 'warn');
       }
       
-      /* GÜÇLÜ OKUMA STRATEJİSİ */
-      if(this.userCropRect && this.cropArea.height < 35){
-        this.status('Seçili dar alan taranıyor — maksimum doğruluk…');
-        regions = [{ rect: this.userCropRect, light: true, fit: 100, angle: 0, fromUser: true }];
-      } else {
-        this.status('Plaka bölgesi algılanıyor…');
-        regions=findPlateRegions(raw);
-      }
-      const rects=[];
-      
-      /* ÇOK KATMANLI OKUMA MOTİFLERİ - En güçlüden en güvenilire + OpenCV */
+      /* HIZLI OKUMA STRATEJİSİ - Sadece en iyi yöntemler */
       /* Cihaz performansına göre varyant sayısını ayarla */
       const deviceCores = navigator.hardwareConcurrency || 4;
       const isSlowDevice = deviceCores <= 2;
       
-      const STRONG = CV_READY && !isSlowDevice 
-        ? [ {mode:'opencv',psm:'7'}, {mode:'otsu',psm:'7'}, {mode:'opencv-light',psm:'7'}, {mode:'sharp',psm:'7'}, {mode:'stretch',psm:'6'} ]
-        : CV_READY
-        ? [ {mode:'opencv',psm:'7'}, {mode:'otsu',psm:'7'}, {mode:'sharp',psm:'7'} ]
-        : [ {mode:'otsu',psm:'7'}, {mode:'sharp',psm:'7'}, {mode:'stretch',psm:'6'} ];
+      /* SADECE EN İYİ YÖNTEMLER - Gereksiz varyantlar kaldırıldı */
+      const BEST = CV_READY && !isSlowDevice 
+        ? [ {mode:'opencv',psm:'7'}, {mode:'otsu',psm:'7'} ]
+        : [ {mode:'otsu',psm:'7'}, {mode:'sharp',psm:'7'} ];
         
-      const ROBUST = CV_READY && !isSlowDevice
-        ? [ {mode:'opencv',psm:'6'}, {mode:'otsu',psm:'6'}, {mode:'opencv-light',psm:'6'}, {mode:'sharp',psm:'6'} ]
-        : CV_READY
-        ? [ {mode:'opencv',psm:'6'}, {mode:'otsu',psm:'6'}, {mode:'sharp',psm:'6'} ]
-        : [ {mode:'otsu',psm:'6'}, {mode:'sharp',psm:'6'} ];
-        
-      const FALLBACK = CV_READY
-        ? [ {mode:'opencv-light',psm:'13'}, {mode:'otsu',psm:'13'}, {mode:'stretch',psm:'13'} ]
-        : [ {mode:'otsu',psm:'13'}, {mode:'stretch',psm:'13'} ];
+      const FALLBACK = [ {mode:'otsu',psm:'6'} ];
+      
+      /* Plaka bölgesi tespit */
+      if(this.userCropRect && this.cropArea.height < 35){
+        this.status('Seçili alan taranıyor...');
+        regions = [{ rect: this.userCropRect, light: true, fit: 100, angle: 0, fromUser: true }];
+      } else {
+        this.status('Plaka aranıyor...');
+        regions=findPlateRegions(raw);
+      }
+      
+      const rects=[];
       
       if(regions.length && regions[0].fromUser){
         /* Kullanıcı dar alan = en agresif okuma */
-        const bx = [{ tam: regions[0].rect, tam2: regions[0].rect, ang: 0 }];
-        rects.push({ r:bx[0].tam, a:0, tag:'user-precise', att:STRONG });
-        rects.push({ r:bx[0].tam, a:0, tag:'user-robust', att:ROBUST });
+        rects.push({ r:regions[0].rect, a:0, tag:'user', att:BEST });
       } else if(regions.length){
-        /* GÜÇLÜ BÖLGE ÇıKARMA - Akıllı kırpma + TR şeridi temizleme */
-        const bx=[];
-        regions.slice(0,5).forEach((rg)=>{
-          const b=rg.rect.slice();
-          const wantH=b[2]/4.72, cy=b[1]+b[3]/2;
-          if(wantH>b[3]*0.85){
-            const nh=Math.min(wantH*1.6, raw.height);
-            b[1]=Math.max(0, Math.round(cy-nh/2));
-            b[3]=Math.min(raw.height-b[1], Math.round(nh));
-          }
-          const padX=b[2]*0.06, padY=b[3]*0.08;
-          b[0]=Math.max(0, Math.round(b[0]-padX));
-          b[2]=Math.min(raw.width-b[0], Math.round(b[2]+padX*2));
-          b[1]=Math.max(0, Math.round(b[1]-padY));
-          b[3]=Math.min(raw.height-b[1], Math.round(b[3]+padY*2));
-          
-          /* TR şeridi temizleme - sol %12 kırp, sağ koru */
-          const tw=b[2]*0.12;
-          bx.push({ 
-            clean:[Math.round(b[0]+tw), b[1], Math.round(b[2]-tw*0.96), b[3]],
-            full:b, 
-            ang:rg.angle||0,
-            quality:rg.fit||0
-          });
-        });
+        /* Otomatik tespit - en iyi bölgeyi dene */
+        const b = regions[0].rect.slice();
+        const padX=b[2]*0.06, padY=b[3]*0.08;
+        b[0]=Math.max(0, Math.round(b[0]-padX));
+        b[2]=Math.min(raw.width-b[0], Math.round(b[2]+padX*2));
+        b[1]=Math.max(0, Math.round(b[1]-padY));
+        b[3]=Math.min(raw.height-b[1], Math.round(b[3]+padY*2));
         
-        /* EN İYİDEN BAŞLAYARAK KATMANLI OKUMA */
-        if(bx.length>0){
-          rects.push({ r:bx[0].clean, a:bx[0].ang, tag:'top-clean', att:STRONG });
-          rects.push({ r:bx[0].full,  a:bx[0].ang, tag:'top-full',  att:ROBUST });
-          rects.push({ r:[0,0,raw.width,raw.height], a:0, tag:'fullframe', att:ROBUST });
-          
-          if(bx.length>1){
-            rects.push({ r:bx[1].clean, a:bx[1].ang, tag:'alt-clean', att:STRONG });
-          }
-          if(bx.length>2){
-            rects.push({ r:bx[2].clean, a:bx[2].ang, tag:'alt2-clean', att:ROBUST });
-          }
-          
-          rects.push({ r:band(raw,0.32,0.24), a:0, tag:'band-mid', att:STRONG });
-          rects.push({ r:band(raw,0.25,0.45), a:0, tag:'band-wide', att:FALLBACK });
-        }
+        rects.push({ r:b, a:0, tag:'auto', att:BEST });
+        rects.push({ r:[0,0,raw.width,raw.height], a:0, tag:'full', att:FALLBACK });
       } else {
-        /* Bölge bulunamadı - tam tarama */
-        rects.push({ r:band(raw,0.30,0.38), a:0, tag:'center', att:STRONG });
-        rects.push({ r:[0,0,raw.width,raw.height], a:0, tag:'full', att:ROBUST });
-        rects.push({ r:band(raw,0.20,0.55), a:0, tag:'wide', att:FALLBACK });
+        /* Bölge bulunamadı - tam kare tara */
+        rects.push({ r:[0,0,raw.width,raw.height], a:0, tag:'full', att:BEST });
       }
       const w=await this.worker(p=>this.prog(10+p*72));
       let done=0, lastErr=null;
       let total=0; rects.forEach(it=>{ total+=it.att.length; });
-      /* Zaman bütçesi: nöbetçiyi bekletmemek için en fazla ~9 saniye tanıma.
-         Kayıtlı kurye eşleşirse zaten daha çabuk durur. */
-      const deadline=Date.now()+9000;
-      const votes={};                    /* plaka -> kaç bağımsız denemede çıktı */
+      
+      /* HIZLI ZAMAN BÜTÇESI: Maksimum 5 saniye - nöbetçiyi bekletme */
+      const deadline=Date.now()+5000;
+      const votes={};
       const outOfTime=()=> Date.now()>deadline && cands.length>0;
-      /* ULTRA GÜÇ OKUMA PARAMETRELERİ - Maksimum doğruluk
-         - DPI: 360 (320'den daha keskin, profesyonel tarama kalitesi)
-         - Whitelist: Sadece TR plaka karakterleri (İ, Ş, Ç hariç)
-         - Preserve spaces: Harf gruplarını ayır
-         - Dictionary: Kapalı (yanlış düzeltmeler önlenir)
-         - Edge detection: Açık (sınır algılama)
-         - Minimum char height: Optimize edilmiş */
+      
+      /* ULTRA GÜÇ OKUMA PARAMETRELERİ */
       const BASE_PARAMS={ 
         tessedit_char_whitelist:'0123456789ABCDEFGHJKLMNOPRSTUVYZ',
         preserve_interword_spaces:'1', 
@@ -3805,12 +3725,16 @@ const Cam = {
         tessedit_char_blacklist:'IOÇŞİĞÜöçşığü',
         classify_bln_numeric_mode:'1'
       };
+      
+      /* HIZLI OKUMA DÖNGÜSÜ */
       for(const item of rects){
         if(outOfTime()) break;
+        
         for(const at of item.att){
           let img;
           try{ img=prep(raw, item.r, at.mode, 1, item.a||0); }
           catch(e){ lastErr='görüntü hazırlanamadı: '+(e&&e.message||e); continue; }
+          
           let txt='', conf=0;
           try{
             const p=Object.assign({}, BASE_PARAMS); p.tessedit_pageseg_mode=at.psm;
@@ -3818,39 +3742,30 @@ const Cam = {
             const r=await w.recognize(img);
             txt=(r&&r.data&&r.data.text)||''; conf=(r&&r.data&&r.data.confidence)||0;
           }catch(e){ lastErr=(e&&e.message)||String(e); }
+          
           if(txt && txt.trim()) texts.push(txt.trim());
           cands=cands.concat(plateCandidates(txt, conf).map(o=>({ plate:o.plate, score:o.score,
             src:item.tag, psm:at.psm, courier:o.courier })));
+          
           this.prog(10+(++done/total)*80);
+          
           const b=bestCandidate(cands);
           if(b) votes[b.plate]=(votes[b.plate]||0)+1;
-          if(b && b.__s>=36) break;             // kayıtlı kurye eşleşti: yeter
-          /* İki ayrı ön işleme aynı plakayı verdiyse okuma büyük olasılıkla doğru;
-             yeni kuryenin ilk karşılaşmasında beklemektense hemen bitir. */
+          
+          /* Erken bitirme: Kurye listesinde bulundu */
+          if(b && b.__s>=36) break;
+          
+          /* İki farklı yöntem aynı plakayı buldu - büyük olasılıkla doğru */
           if(b && b.__s>=12 && votes[b.plate]>=2) break;
+          
           if(outOfTime()) break;
         }
+        
         const best=bestCandidate(cands);
         if(best && best.__s>=36) break;
         if(best && best.__s>=12 && votes[best.plate]>=2) break;
       }
-      /* Süre bitti ama hiç aday yoksa son bir çaba: hiç kısıtlama olmadan
-         tüm kareyi dene. Bazen plaka dedektörü tamamen kaçırır. */
-      if(!cands.length && !outOfTime()){
-        for(const at of [{mode:'otsu',psm:'6'},{mode:'stretch',psm:'6'}]){
-          try{
-            const img=prep(raw, [0,0,raw.width,raw.height], at.mode, 1, 0);
-            const p=Object.assign({}, BASE_PARAMS); p.tessedit_pageseg_mode=at.psm;
-            await w.setParameters(p);
-            const r=await w.recognize(img);
-            const t2=(r&&r.data&&r.data.text)||'';
-            if(t2 && t2.trim()) texts.push(t2.trim());
-            cands=cands.concat(plateCandidates(t2, (r&&r.data&&r.data.confidence)||0)
-              .map(o=>({ plate:o.plate, score:o.score, src:'son', psm:at.psm, courier:o.courier })));
-          }catch(e){}
-          if(cands.length) break;
-        }
-      }
+      
       this.rawText=texts.join(' ');
       if(!cands.length && this.rawText) cands=plateCandidates(this.rawText, 60);
       this.lastErr=lastErr;
