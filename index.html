@@ -2712,7 +2712,7 @@ const Cam = {
 
   /* Okuma alanını pinch ile daralt/genişlet */
   setupCropArea(){
-    const guide = $('#camView .cam-guide');
+    const guide = $('.cam-guide');
     if(!guide) return;
     
     guide.addEventListener('touchstart', (e) => {
@@ -2760,7 +2760,7 @@ const Cam = {
   },
   
   updateCropUI(){
-    const guide = $('#camView .cam-guide');
+    const guide = $('.cam-guide');
     if(!guide) return;
     guide.style.top = this.cropArea.top + '%';
     guide.style.height = this.cropArea.height + '%';
