@@ -1,0 +1,541 @@
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <div class="brand-mark">◎</div>
+      <div class="brand-text">
+        <div class="t">Çınarköy Nöbet</div>
+        <div class="s" id="guardLabel" role="button" title="Ad değiştirmek için dokunun">Güvenlik adres asistanı</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <button class="icon-btn sm" id="speakBtn" title="Ekranı sesli oku">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+      </button>
+      <div class="clock" id="clock">--:--</div>
+      <button class="icon-btn sm" id="setBtn" title="Ayarlar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.2a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" style="display:none"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></span><span id="bannerText"></span></div>
+
+  <main>
+    <!-- ============ ARA ============ -->
+    <section id="tab-search" class="active">
+      <div class="search-wrap">
+        <div class="search-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C8B8B" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="searchInput" placeholder="Blok, daire veya plaka ara…" autocomplete="off" enterkeyhint="search">
+        </div>
+        <button class="icon-btn mic" id="micBtn" title="Sesle ara">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        </button>
+        <button class="icon-btn" id="camQuickBtn" title="Plakayı kamerayla okut">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+      </div>
+      <div id="srHints" class="chiprow tight" style="display:none;"></div>
+      <div class="chiprow streetrow" id="streetRow"></div>
+      <div class="accordion" id="browseList"></div>
+      <div class="result-list" id="resultList" style="display:none;"></div>
+    </section>
+
+    <!-- ============ PLAN ============ -->
+    <section id="tab-map">
+      <div class="map-hint" id="mapHint">Bir bloğa dokunun — gerçek yerleşim planı üzerinden.</div>      <div class="map-frame">
+        <div class="map-badge">Canlı Plan</div>
+        <img id="mapImg" alt="Çınarköy yerleşim planı" src="__MAP_IMG__">
+        <svg id="hotspots" viewBox="0 0 900 1323" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="map-caption"><span class="dot"></span><span id="mapCaption">Bir parsele dokunup üniteyi seçin</span></div>
+      <div id="siteListBox"></div>
+    </section>
+
+    <!-- ============ PLAKA ============ -->
+    <section id="tab-plate">
+      <div class="card">
+        <div class="card-t">Plaka Tanıma<span class="card-q" data-help="kamera" title="Yardım"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span></div>
+        <p class="card-p">Kamerayla plakayı okutun; kayıtlı kurye listeden adı otomatik gelsin. Yeni plakalar bir kez kaydedilince herkesin telefonunda tanınır.</p>
+        <div class="btn-row"><button class="btn btn-primary" id="openCamBtn">Kamerayı Aç ve Okut</button></div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="plateTypeBtn">Plakayı Yaz</button>
+          <button class="btn btn-secondary" id="courierAddBtn">Kurye Ekle</button>
+        </div>
+        <div class="mini-note" id="camNote"></div>
+      </div>
+
+      <div class="list-title"><span>Son okunan plakalar</span><span id="plateStat" class="pill"></span></div>
+      <div id="lastPlates" class="plate-list"></div>
+
+      <div class="list-title"><span>Kayıtlı kuryeler</span><span id="courierStat" class="pill"></span></div>
+      <div class="search-box" style="margin-bottom:10px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C8B8B" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="courierSearch" placeholder="Kurye adı veya plaka ara…" autocomplete="off">
+      </div>
+      <div id="courierList" class="plate-list"></div>
+    </section>
+
+    <!-- ============ KAYITLAR ============ -->
+    <section id="tab-log">
+      <div class="stat-row stat4">
+        <div class="stat"><div class="num" id="statToday">0</div><div class="lab">Bugün</div></div>
+        <div class="stat"><div class="num" id="statTotal">0</div><div class="lab">Toplam</div></div>
+        <div class="stat"><div class="num" id="statCourier">0</div><div class="lab">Kurye</div></div>
+        <div class="stat"><div class="num" id="statPlate">0</div><div class="lab">Plaka</div></div>
+      </div>
+
+      <div class="mini-note" style="margin:-4px 0 10px">Kurye ve Plaka sayısı, seçili aralıktaki <b>farklı</b> kurye/plaka adedidir.</div>
+      <div class="seg" id="logRange">
+        <div data-r="today" class="on">Bugün</div>
+        <div data-r="3">3 Gün</div>
+        <div data-r="7">7 Gün</div>
+        <div data-r="all">Tümü</div>
+      </div>
+      <div class="search-box" style="margin-bottom:10px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C8B8B" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="logSearch" placeholder="Kayıtlarda ara…" autocomplete="off">
+      </div>
+      <div id="logList"></div>
+      <div class="list-title">Paylaş &amp; Aktar<span class="card-q" data-help="veri" title="Yardım"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span></div>
+      <div class="export-row">
+        <button class="btn btn-primary" id="exportWa">WhatsApp Raporu</button>
+        <button class="btn btn-secondary" id="exportJson">JSON indir</button>
+      </div>
+      <div class="export-row">
+        <button class="btn btn-secondary" id="exportXlsx">Excel indir</button>
+        <button class="btn btn-secondary" id="openSync">Veri Paketi</button>
+      </div>
+      <div class="mini-note">Veri paketi, telefonlar arasında kayıtları ve kurye listesini taşır. Paketi WhatsApp'tan arkadaşınıza gönderin, o da "Al" ile kendi telefonunu günceller.</div>
+    </section>
+
+    <!-- ============ AYARLAR ============ -->
+    <section id="tab-set">
+      <div class="set-group">
+        <div class="gh">Nöbetçi</div>
+        <div class="srow" id="rowGuard">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div class="smain"><div class="st">Nöbetçi adı</div><div class="ss">Dokunarak istediğiniz zaman değiştirebilirsiniz</div></div>
+          <div class="sval" id="guardVal">—</div><div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowNames">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h12"/></svg></div>
+          <div class="smain"><div class="st">Kullanılan isim geçmişi</div><div class="ss">Eski kayıtlar kendi ismini korur</div></div>
+          <div class="sval" id="namesVal">0</div><div class="chev">›</div>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="gh">Ses</div>
+        <div class="srow" data-set="tts">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg></div>
+          <div class="smain"><div class="st">Sesli okuma</div><div class="ss">Varsayılan kapalı — açarsanız bulunan plakayı ve kaydı yüksek sesle okur</div></div>
+          <div class="sw" data-sw="tts"></div>
+        </div>
+        <div class="srow" id="rowRate">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <div class="smain"><div class="st">Okuma hızı</div><div class="ss">Yavaş · Normal · Hızlı</div></div>
+          <div class="sval" id="rateVal">Normal</div><div class="chev">›</div>
+        </div>
+        <div class="srow" data-set="sound">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+          <div class="smain"><div class="st">Bildirim sesi</div><div class="ss">Kayıt ve hata sesleri</div></div>
+          <div class="sw" data-sw="sound"></div>
+        </div>
+        <div class="srow" data-set="haptic">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg></div>
+          <div class="smain"><div class="st">Titreşim</div><div class="ss">Dokununca küçük titreşim</div></div>
+          <div class="sw" data-sw="haptic"></div>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="gh">Sesli yazım (mikrofon)<span class="gh-help" data-help="mikrofon" title="Yardım"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span></div>
+        <div class="srow" id="rowStt">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></div>
+          <div class="smain"><div class="st">Mikrofon testi</div><div class="ss" id="sttState">Kontrol ediliyor…</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowSttFix">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></div>
+          <div class="smain"><div class="st">Mikrofon çalışmıyorsa</div><div class="ss">Adım adım çözümler</div></div>
+          <div class="chev">›</div>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="gh">Plaka &amp; Kurye<span class="gh-help" data-help="plaka" title="Yardım"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span></div>
+        <div class="srow" data-set="autolearn">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="smain"><div class="st">Yeni plakayı öğren</div><div class="ss">Kayıtta girilen plakayı kurye listesine ekler</div></div>
+          <div class="sw" data-sw="autolearn"></div>
+        </div>
+        <div class="srow" data-set="autoPlate">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 12h4M14 12h4"/></svg></div>
+          <div class="smain"><div class="st">Kayda plaka sor</div><div class="ss">Giriş kaydında plaka alanı açılır</div></div>
+          <div class="sw" data-sw="autoPlate"></div>
+        </div>
+        <div class="srow" data-set="autoCam">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></div>
+          <div class="smain"><div class="st">Kamera açılınca kendi çeksin</div><div class="ss">Görüntü oturunca plaka otomatik okunur</div></div>
+          <div class="sw" data-sw="autoCam"></div>
+        </div>
+        <div class="srow" data-set="autoFirm">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h.01M15 9h.01M9 13h.01M15 13h.01M9 17h.01M15 17h.01"/></svg></div>
+          <div class="smain"><div class="st">Firma listesini açık göster</div><div class="ss">Kayıtta hazır firmalar görünür</div></div>
+          <div class="sw" data-sw="autoFirm"></div>
+        </div>
+        <div class="srow" id="rowCourierList">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 20v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 20v-2a4 4 0 0 0-3-3.9"/></svg></div>
+          <div class="smain"><div class="st">Kurye listesi</div><div class="ss">Plaka → kurye eşleştirmeleri</div></div>
+          <div class="sval" id="courierVal">0</div><div class="chev">›</div>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="gh">Bloklar &amp; Daireler<span class="gh-help" data-help="adres" title="Bu konuda yardım"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span></div>
+        <div class="srow" id="rowSites">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></div>
+          <div class="smain"><div class="st">Adresleri düzenle</div><div class="ss">Blok adı, sokak, daire no — hepsi buradan</div></div>
+          <div class="sval" id="sitesVal">0</div><div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowAddSite">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M15 9h.01M9 13h.01M15 13h.01M9 17h.01M15 17h.01"/></svg></div>
+          <div class="smain"><div class="st">Yeni blok ekle</div><div class="ss">Örn. Cevahir 563-20</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowAddUnit">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg></div>
+          <div class="smain"><div class="st">Daire ekle / düzenle</div><div class="ss">Daire no ve kapı notu</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowPlace">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+          <div class="smain"><div class="st">Plan üzerinde konumlandır</div><div class="ss">Yeni bloğu haritada işaretle</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowCounts">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 5-7"/></svg></div>
+          <div class="smain"><div class="st">Blok / daire listesi</div><div class="ss">Numaraları kopyalayıp kontrol edin</div></div>
+          <div class="chev">›</div>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="gh">Veri &amp; Yedek<span class="gh-help" data-help="veri" title="Yardım"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span></div>
+        <div class="srow" id="rowSync">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7v10l16-5z"/><path d="M20 4v6M20 14v6"/></svg></div>
+          <div class="smain"><div class="st">Telefonlar arası aktarım</div><div class="ss" id="syncState">Paket gönder / al</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowImport">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg></div>
+          <div class="smain"><div class="st">Dosyadan içe aktar</div><div class="ss">JSON veri paketi seçin</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowWaLink">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 20.5l1.5-5a8.4 8.4 0 0 1-.9-3.8 8.4 8.4 0 0 1 8.4-9 8.4 8.4 0 0 1 9 8.4Z"/></svg></div>
+          <div class="smain"><div class="st">WhatsApp grup bağlantısı</div><div class="ss">Raporların doğrudan gruba gitsin</div></div>
+          <div class="sval" id="waVal">—</div><div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowBackup">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg></div>
+          <div class="smain"><div class="st">Tam yedek al</div><div class="ss">Tüm kayıtlar + kuryeler + bloklar</div></div>
+          <div class="chev">›</div>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="gh">Bakım</div>
+        <div class="srow" id="rowMergeFix">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg></div>
+          <div class="smain"><div class="st">Yinelenen kayıtları birleştir</div><div class="ss">Kopya ve eski kayıtları temizler</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="srow danger" id="rowWipe">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></div>
+          <div class="smain"><div class="st">Tüm verileri sil</div><div class="ss">Kayıtlar, kuryeler ve bloklar silinir</div></div>
+          <div class="chev">›</div>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="gh">Yardım</div>
+        <div class="srow" id="rowFaq">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg></div>
+          <div class="smain"><div class="st">Sıkça sorulan sorular</div><div class="ss">Uygulama neler yapıyor, neler yapmıyor — hepsi burada</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowTour">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8l-2.5 11-3-4-4-3Z"/></svg></div>
+          <div class="smain"><div class="st">Nasıl kullanılır?</div><div class="ss">Adım adım kısa rehber</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="srow" id="rowAbout">
+          <div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div>
+          <div class="smain"><div class="st">Uygulama bilgisi</div><div class="ss" id="aboutLine">Sürüm 2.0</div></div>
+          <div class="chev">›</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <div class="tab active" data-tab="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Ara</div>
+    <div class="tab" data-tab="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20 3 17V4l6 3 6-3 6 3v13l-6-3-6 3Z"/><path d="M9 7v13M15 4v13"/></svg>Plan</div>
+    <div class="tab" data-tab="plate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 12h4M14 12h4"/></svg>Plaka</div>
+    <div class="tab" data-tab="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H4v16h16V5h-5"/><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 12h8M8 16h5"/></svg>Kayıt</div>
+    <div class="tab" data-tab="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M20 12a8 8 0 0 1-.1 1.2l2 1.6-2 3.4-2.4-1a8 8 0 0 1-2 1.2l-.4 2.6h-4l-.4-2.6a8 8 0 0 1-2-1.2l-2.4 1-2-3.4 2-1.6a8.1 8.1 0 0 1 0-2.4l-2-1.6 2-3.4 2.4 1a8 8 0 0 1 2-1.2L10 2h4l.4 2.6a8 8 0 0 1 2 1.2l2.4-1 2 3.4-2 1.6c.1.4.1.8.1 1.2Z"/></svg>Ayarlar</div>
+  </nav>
+</div>
+
+<div id="liveBar"><span class="lb-t" id="liveTitle">Dinliyor…</span><span id="liveText"></span></div>
+
+<!-- ===== ADRES YÖNETİCİSİ (tam ekran) ===== -->
+<div class="page" id="siteMgr">
+  <div class="page-bar">
+    <button class="page-back" id="siteMgrBack" type="button" aria-label="Geri">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="page-t">Adresler</div>
+    <button class="page-act" id="siteMgrReset" type="button">Sıfırla</button>
+  </div>
+  <div class="page-body" id="siteMgrBody"></div>
+  <div class="page-foot">
+    <button class="btn btn-primary" id="siteMgrAdd" type="button">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Yeni blok ekle
+    </button>
+  </div>
+</div>
+
+<!-- ===== YARDIM / SSS (tam ekran) ===== -->
+<div class="page" id="helpPage">
+  <div class="page-bar">
+    <button class="page-back" id="helpBack" type="button" aria-label="Geri">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="page-t" id="helpTitle">Yardım</div>
+    <div style="width:44px"></div>
+  </div>
+  <div class="page-body" id="helpBody"></div>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <h2 id="sheetTitle">—</h2>
+  <div class="sub" id="sheetSub">—</div>
+  <div id="unitPicker" class="unit-grid" style="display:none;"></div>
+  <div id="unitDetail" style="display:none;">
+    <div class="entry-note" id="sheetNote" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="sheetNoteText"></span></div>
+    <div class="unit-stats">
+      <div><div class="n" id="usTotal">0</div><div class="l">Toplam giriş</div></div>
+      <div><div class="n" id="usLast">—</div><div class="l">Son giriş</div></div>
+      <div><div class="n" id="usCourier">—</div><div class="l">Son kurye</div></div>
+    </div>
+    <div class="mini-list" id="unitHistory"></div>
+    <div class="qr-box" id="qrBox"><div id="qrcode"></div></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="logVisitBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Girişi Kaydet</button>
+      <button class="btn btn-secondary" id="speakUnitBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>Okut</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="openMapsBtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>Haritada Aç</button>
+      <button class="btn btn-secondary" id="camUnitBtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg>Plaka Okut</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="closeSheetBtn">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== nöbetçi adı ===== -->
+<div class="modal-backdrop" id="nameModal">
+  <div class="modal">
+    <h3 id="nameModalTitle">Nöbetçi adınız</h3>
+    <p id="nameModalText">Kayıtlar hangi güvenlik görevlisine ait olsun? İstediğiniz zaman değiştirebilirsiniz.</p>
+    <div class="mrow">
+      <input id="guardNameInput" placeholder="Ad Soyad" autocomplete="name" style="margin-bottom:0">
+      <button class="icon-btn mic" id="guardMicBtn" type="button" title="Söyle"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></button>
+    </div>
+    <div class="hint" id="nameHint">İsim değiştirildiğinde eski kayıtlar kendi ismini korur.</div>
+    <div class="btn-row" style="margin-top:14px;margin-bottom:0">
+      <button class="btn btn-ghost" id="cancelGuardBtn" style="flex:0 0 34%">Vazgeç</button>
+      <button class="btn btn-primary" id="saveGuardBtn" style="flex:1">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== kurye + plaka ===== -->
+<div class="modal-backdrop" id="courierModal">
+  <div class="modal wide">
+    <h3>Teslimat kaydı</h3>
+    <p id="courierModalText">Kuryenin adını yazın, mikrofonla söyleyin veya plakayı okutun.</p>
+    <div id="courierPlateBox" style="margin-bottom:12px">
+      <div class="mrow">
+        <input id="courierPlateInput" placeholder="Plaka (34 ABC 123)" style="margin-bottom:0;text-transform:uppercase;letter-spacing:1px;font-family:'Space Grotesk',sans-serif;font-weight:600" autocapitalize="characters" autocomplete="off">
+        <button class="icon-btn" id="courierCamBtn" type="button" title="Plakayı okut"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></button>
+        <button class="icon-btn mic" id="plateMicBtn" type="button" title="Söyle"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></button>
+      </div>
+      <div id="plateHint" class="hint"></div>
+    </div>
+    <div class="mrow">
+      <input id="courierNameInput" placeholder="Kurye adı" style="margin-bottom:0">
+      <button class="icon-btn mic" id="courierMicBtn" type="button" title="Söyle"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></button>
+    </div>
+    <div class="co-field slim" id="courierCoField" style="margin-top:11px">
+      <div class="mrow" style="margin-bottom:0">
+        <input id="courierCompanyInput" placeholder="Firma (yazabilir ya da aşağıdan işaretleyin)" style="margin-bottom:0">
+        <button class="co-toggle" id="courierCoToggle" type="button" style="flex:0 0 auto;white-space:nowrap;border:0">
+          <span>List</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="co-chips" id="courierCoChips"></div>
+      <div class="co-hint" id="courierCoHint">Firma adı serbest yazılır; listeye dokunarak da hızlıca işaretleyebilirsiniz.</div>
+    </div>
+    <div id="courierSuggest" class="mini-list" style="margin-top:10px;max-height:130px"></div>
+    <div class="btn-row" style="margin-top:14px;margin-bottom:0">
+      <button class="btn btn-ghost" id="cancelCourierBtn" style="flex:0 0 34%">Vazgeç</button>
+      <button class="btn btn-primary" id="saveCourierBtn" style="flex:1">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== onay ===== -->
+<div class="modal-backdrop" id="askModal">
+  <div class="modal">
+    <h3 id="askTitle">Onay</h3>
+    <p id="askText"></p>
+    <div class="btn-row" style="margin-bottom:0">
+      <button class="btn btn-ghost" id="askNo" style="flex:0 0 34%">Vazgeç</button>
+      <button class="btn btn-primary" id="askYes" style="flex:1">Onayla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== form ===== -->
+<div class="modal-backdrop" id="formModal">
+  <div class="modal wide">
+    <h3 id="formTitle">Bilgi</h3>
+    <p id="formText"></p>
+    <div id="formFields"></div>
+    <div class="btn-row" style="margin-bottom:0">
+      <button class="btn btn-ghost" id="formCancel" style="flex:0 0 30%">Vazgeç</button>
+      <button class="btn btn-primary" id="formOk" style="flex:1">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== eylem listesi ===== -->
+<div class="modal-backdrop" id="actModal">
+  <div class="modal">
+    <h3 id="actTitle">Tamamlandı</h3>
+    <p id="actText"></p>
+    <div class="act-list" id="actList"></div>
+    <div class="btn-row" style="margin-top:14px;margin-bottom:0">
+      <button class="btn btn-ghost" id="actClose" style="flex:1">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== paylaşım ===== -->
+<div class="modal-backdrop" id="shareModal">
+  <div class="modal wide">
+    <h3 id="shareTitle">Paylaş</h3>
+    <p id="shareText">Aşağıdaki metni WhatsApp'ta gönderebilir veya doğrudan paylaşabilirsiniz.</p>
+    <textarea id="shareArea" rows="6" readonly style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px"></textarea>
+    <div class="btn-row" style="margin-top:12px;margin-bottom:0">
+      <button class="btn btn-primary" id="shareWa">WhatsApp</button>
+      <button class="btn btn-secondary" id="shareNative">Paylaş</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px;margin-bottom:0">
+      <button class="btn btn-secondary" id="shareCopy">Metni Kopyala</button>
+      <button class="btn btn-ghost" id="shareFile" style="flex:0 0 34%">Dosya İndir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== aktarım ===== -->
+<div class="modal-backdrop" id="syncModal">
+  <div class="modal wide">
+    <h3>Telefonlar Arası Aktarım</h3>
+    <p>Uygulama çevrimdışı çalışır; bu yüzden kayıtlar ve kurye listesi dosya ile taşınır. Paketi WhatsApp'tan gönderin, karşı taraf "Al" ile güncellenir.</p>
+    <div class="btn-row" style="margin-bottom:0"><button class="btn btn-primary" id="syncSend">Paket Oluştur &amp; Gönder</button></div>
+    <div class="btn-row" style="margin-top:8px;margin-bottom:0"><button class="btn btn-secondary" id="syncDelta">Sadece Yeni Kayıtlar</button></div>
+    <div class="btn-row" style="margin-top:8px;margin-bottom:0"><button class="btn btn-secondary" id="syncPick">Dosyadan Al</button><button class="btn btn-secondary" id="syncPaste">Metin Yapıştır</button></div>
+    <div class="btn-row" style="margin-top:8px;margin-bottom:0"><button class="btn btn-ghost" id="syncClose" style="flex:1">Kapat</button></div>
+    <div class="hint" id="syncState2"></div>
+  </div>
+</div>
+
+<!-- ===== yapıştır ===== -->
+<div class="modal-backdrop" id="pasteModal">
+  <div class="modal wide">
+    <h3>Veri paketini yapıştır</h3>
+    <p>Arkadaşınızın gönderdiği metni buraya yapıştırın.</p>
+    <textarea id="pasteArea" rows="7" placeholder="eyJhcHAiOiJjay1ub2JldCIs…"></textarea>
+    <div class="btn-row" style="margin-top:12px;margin-bottom:0">
+      <button class="btn btn-ghost" id="pasteCancel" style="flex:0 0 34%">Vazgeç</button>
+      <button class="btn btn-primary" id="pasteOk" style="flex:1">İçe Aktar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== kamera / plaka okutucu ===== -->
+<div id="camSheet">
+  <div class="cam-top">
+    <button class="cam-glass" id="camClose" type="button" title="Kapat" aria-label="Kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <div class="cam-title">
+      <div class="t" id="camTitle">Plaka Okut</div>
+      <div class="s" id="camSub">Kamera hazırlanıyor…</div>
+    </div>
+    <button class="cam-glass" id="camGallery" type="button" title="Galeriden seç" aria-label="Galeriden seç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.8" cy="9" r="1.7"/><path d="m3.5 17 4.6-4.4a2 2 0 0 1 2.8 0L20 21"/></svg></button>
+  </div>
+
+  <div class="cam-view" id="camView">
+    <div class="ph" id="camPh">Kamera başlatılıyor…</div>
+    <video id="camVideo" playsinline autoplay muted style="display:none"></video>
+    <div class="cam-frame">
+      <div class="cam-guide"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b><i></i><u>Plakayı çerçeveye alın</u></div>
+    </div>
+    <div class="cam-warn" id="camWarn" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      <span id="camWarnText"></span>
+    </div>
+    <div class="cam-out" id="camOut">
+      <div class="cam-hit">
+        <div class="plate-box" id="camPlateBox" style="display:none"><span class="flag">TR</span><span class="pl" id="camPlate">—</span></div>
+        <div class="cam-who">
+          <div class="lb">Kurye</div>
+          <div class="nm dim" id="camCourier">—</div>
+        </div>
+        <div class="prog" id="camProg" style="display:none;flex:1;min-width:70px"><i></i></div>
+      </div>
+      <div class="cam-alts" id="camAlts" style="display:none"></div>
+      <div class="cam-status" id="camStatus">—</div>
+    </div>
+  </div>
+
+  <div class="cam-actions" id="camActions">
+    <button class="btn btn-ghost" id="camAgain" type="button">Tekrar Çek</button>
+    <button class="btn btn-primary" id="camUse" type="button">Kullan</button>
+  </div>
+
+  <div class="cam-bar">
+    <button class="cam-side" id="camType" type="button">
+      <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
+      <span>Yaz</span>
+    </button>
+    <button class="shutter" id="camShot" type="button" title="Çek" aria-label="Çek"><i></i></button>
+    <button class="cam-side" id="camSwitch" type="button">
+      <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/></svg></span>
+      <span>Çevir</span>
+    </button>
+  </div>
+</div>
+<input type="file" id="camFile" accept="image/*" style="display:none">
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept="application/json,.json,.txt,text/plain" style="display:none">
