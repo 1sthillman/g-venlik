@@ -3625,193 +3625,148 @@ const Cam = {
     setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),320); },40);
   },
 
-  /* ---- OKUMA - ROCK-SOLID ERROR HANDLING --- */
+  /* ---- ULTRA BASIT VE HIZLI OKUMA - Referans dosyadan adapte edildi ---- */
   async read(raw){
-    /* ==================== STATE CHECK ==================== */
     if(this.busy){
-      console.warn('Read: Already busy');
+      console.warn('Zaten okuma yapılıyor');
       return;
     }
     
-    /* ==================== STATE SET: READING ==================== */
-    this.busy=true; 
+    this.busy = true;
     this.scanning(true);
-    this.status('Plaka aranıyor…');
-    this.prog(4);
-    
-    const texts=[]; let cands=[]; let regions=[];
+    this.status('Plaka okunuyor…');
+    this.prog(10);
     
     try{
-      /* Görüntü kalite kontrolü */
-      const q=imageQuality(raw);
-      this.quality=q;
-      
-      if(!q){
-        throw new Error('Görüntü kalitesi değerlendirilemedi');
+      /* Tesseract worker hazırla */
+      if(!this.engine){
+        this.status('Okuma motoru hazırlanıyor…');
+        await this.worker(() => {});
       }
       
-      console.log(`Görüntü kalitesi: Mean=${q.mean.toFixed(1)}, Sharp=${q.sharp.toFixed(1)}`);
+      this.prog(20);
+      this.status('Fotoğraf işleniyor…');
       
-      if(q.mean<52){
-        this.status('Görüntü karanlık — plakayı aydınlatın veya flaşı açın');
-        toast('Çok karanlık - flaşı deneyin', 'warn');
-      } else if(q.sharp<11){
-        this.status('Görüntü bulanık — telefonu sabit tutun');
-        toast('Bulanık görüntü - sabit tutun', 'warn');
+      /* PREPROCESSING VARYANTLARI - Basit ve hızlı */
+      const variants = [];
+      const budget = (navigator.hardwareConcurrency || 4) <= 2 ? 2 : 3;
+      
+      try{
+        if(CV_READY){
+          variants.push({ label: 'opencv', canvas: preprocessWithOpenCV(this.cloneCanvas(raw)) });
+          if(budget >= 3){
+            variants.push({ label: 'opencv-light', canvas: preprocessWithOpenCVLight(this.cloneCanvas(raw)) });
+          }
+        }
+      }catch(e){
+        console.warn('OpenCV preprocessing failed:', e);
       }
       
-      /* BASİT VE ETKİLİ OKUMA STRATEJİSİ */
-      this.status('Plaka aranıyor...');
+      variants.push({ label: 'basic', canvas: preprocessBasic(this.cloneCanvas(raw)) });
       
-      const w=await this.worker(p=>this.prog(10+p*80));
-      
-      /* Preprocessing varyantları - Basit ve etkili */
-      const methods = [
-        { mode: 'otsu', psm: '7' },      // Binary - tek satır (araç plakaları)
-        { mode: 'otsu', psm: '8' },      // Binary - tek kelime
-        { mode: 'sharp', psm: '7' },     // Keskinleştirme - tek satır
-        { mode: 'otsu', psm: '6' },      // Binary - tek blok (motor)
-        { mode: 'stretch', psm: '6' },   // Kontrast - blok
-        { mode: 'otsu', psm: '11' }      // Binary - seyrek metin
-      ];
-      
-      if(CV_READY){
-        methods.unshift({ mode: 'opencv', psm: '7' }); // OpenCV varsa en başa ekle
-        methods.splice(3, 0, { mode: 'opencv', psm: '6' }); // Blok modu da ekle
-      }
-      
-      /* OKUMA PARAMETRELERİ - BASİT VE ESNEKstr */
-      const BASE_PARAMS = { 
-        tessedit_char_whitelist: '0123456789ABCDEFGHJKLMNOPRSTUVYZ ',
-        preserve_interword_spaces: '1', 
-        user_defined_dpi: '300'
-      };
-      
-      let lastErr = null;
-      const votes = {};
-      
-      /* Tüm yöntemleri dene */
-      for(let i = 0; i < methods.length; i++){
-        const method = methods[i];
-        
+      /* OKUMA - Her varyantı dene */
+      const results = [];
+      for(let i = 0; i < variants.length; i++){
         try{
-          this.status(`Okuma ${i+1}/${methods.length}...`);
+          this.status(`Okuma ${i+1}/${variants.length}…`);
+          this.prog(20 + (i / variants.length) * 70);
           
-          /* Görüntüyü hazırla */
-          let img = prep(raw, null, method.mode, 1, 0);
-          
-          /* Tesseract'a gönder */
-          const params = Object.assign({}, BASE_PARAMS);
-          params.tessedit_pageseg_mode = method.psm;
-          await w.setParameters(params);
-          
-          const result = await w.recognize(img);
-          const txt = (result && result.data && result.data.text) || '';
+          const result = await this.engine.recognize(variants[i].canvas);
+          const text = (result && result.data && result.data.text) || '';
           const conf = (result && result.data && result.data.confidence) || 0;
           
-          if(txt && txt.trim()){
-            texts.push(txt.trim());
-            console.log(`Method ${method.mode}/${method.psm}: "${txt.trim()}" (${conf.toFixed(1)}%)`);
-            
-            /* Plaka adaylarını çıkar */
-            const newCands = plateCandidates(txt, conf).map(o => ({
-              plate: o.plate,
-              score: o.score,
-              src: method.mode,
-              psm: method.psm,
-              courier: o.courier
-            }));
-            
-            cands = cands.concat(newCands);
-            
-            /* Oy sayımı */
-            newCands.forEach(c => {
-              if(c.plate) votes[c.plate] = (votes[c.plate] || 0) + 1;
-            });
-          }
+          results.push({
+            text: this.normalizePlate(text),
+            conf: conf,
+            label: variants[i].label
+          });
           
-          this.prog(10 + ((i + 1) / methods.length) * 80);
-          
-          /* Erken bitirme: Güçlü eşleşme bulundu */
-          const best = bestCandidate(cands);
-          if(best){
-            // Kayıtlı kurye bulundu
-            if(best.__s >= 36) {
-              console.log('Kayıtlı kurye bulundu, bitiriliyor:', best.plate);
-              break;
-            }
-            // Aynı plaka 2 farklı yöntemde bulundu
-            if(votes[best.plate] >= 2 && best.__s >= 12){
-              console.log('Plaka 2+ yöntemde eşleşti, bitiriliyor:', best.plate);
-              break;
-            }
-          }
+          console.log(`${variants[i].label}: "${results[i].text}" (${conf.toFixed(1)}%)`);
           
         }catch(e){
-          lastErr = (e && e.message) || String(e);
-          console.warn(`Method ${method.mode}/${method.psm} failed:`, e);
+          console.warn(`Varyant ${variants[i].label} başarısız:`, e);
+          results.push({ text: '', conf: 0, label: variants[i].label });
         }
       }
       
-      this.rawText = texts.join(' ');
-      this.lastErr = lastErr;
+      /* OYLAMA - Aynı sonuç birden fazla varyantda çıktıysa güvenilir */
+      const counts = {};
+      results.forEach(r => {
+        if(r.text) counts[r.text] = (counts[r.text] || 0) + 1;
+      });
+      
+      let bestText = '', bestCount = 0;
+      Object.keys(counts).forEach(t => {
+        if(counts[t] > bestCount){
+          bestCount = counts[t];
+          bestText = t;
+        }
+      });
+      
+      let chosen, confidence;
+      if(bestCount >= 2){
+        /* Aynı sonuç 2+ kerede - yüksek güven */
+        chosen = bestText;
+        confidence = 'high';
+      } else {
+        /* En yüksek confidence'lı sonuç */
+        const sorted = results.slice().sort((a, b) => b.conf - a.conf);
+        chosen = sorted[0] ? sorted[0].text : '';
+        confidence = chosen ? 'low' : 'none';
+      }
+      
+      console.log(`Seçilen: "${chosen}" (${confidence}, ${bestCount} oy)`);
+      
       this.prog(100);
       
-      console.log(`Okuma tamamlandı: ${cands.length} aday, ${Object.keys(votes).length} unique plaka`);
+      /* Sonuçları işle */
+      const texts = results.map(r => r.text).filter(Boolean);
+      const cands = chosen ? plateCandidates(chosen, confidence === 'high' ? 80 : 40) : [];
       
-    }catch(e){
-      /* ==================== HATA YÖNETİMİ - ROCK-SOLID ==================== */
-      console.error('Read error:', e);
+      this.rawText = texts.join(' ');
       
-      this.progOff(); 
-      this.busy=false; 
+      setTimeout(() => { this.progOff(); }, 300);
+      this.busy = false;
       this.scanning(false);
       
-      /* Hata türüne göre mesaj */
-      let errorMsg = 'Okuma yapılamadı';
-      let userMsg = 'Tekrar deneyin';
+      this.deliver(cands, texts, []);
       
-      if(e && e.message){
-        if(e.message.includes('tanıma kütüphanesi')){
-          errorMsg = 'Tanıma motoru yüklenemedi';
-          userMsg = 'İnternet bağlantınızı kontrol edin';
-        } else if(e.message.includes('timeout') || e.message.includes('zaman aşımı')){
-          errorMsg = 'İşlem zaman aşımına uğradı';
-          userMsg = 'Daha net bir fotoğraf çekin';
-        } else if(e.message.includes('kalitesi')){
-          errorMsg = 'Görüntü kalitesi yetersiz';
-          userMsg = 'Daha yakından veya aydınlık yerde çekin';
-        } else {
-          errorMsg = e.message;
+    }catch(e){
+      console.error('Okuma hatası:', e);
+      
+      this.progOff();
+      this.busy = false;
+      this.scanning(false);
+      
+      this.say('Okuma yapılamadı');
+      this.status('Tekrar deneyin veya "Yaz" ile elle girin', true);
+      toast('Okuma başarısız', 'err');
+      
+      setTimeout(() => {
+        if(confirm('Plaka okunamadı. Elle girmek ister misiniz?')){
+          this.close();
+          plateTypeDialog(this.ctxMode || 'scan');
         }
-      }
-      
-      this.say(errorMsg);
-      this.status(userMsg, true);
-      toast(errorMsg + ' - ' + userMsg, 'err');
-      
-      /* UI göster - kullanıcı tekrar deneyebilsin */
-      this.show();
-      
-      /* Recovery check */
-      if(!this.engineTried){
-        console.log('Engine hiç denenmemiş, worker başlatılıyor...');
-        try{
-          await this.worker(() => {});
-        }catch(workerError){
-          console.error('Worker başlatma hatası:', workerError);
-          this.status('Tanıma motoru kullanılamıyor - Elle girin', true);
-        }
-      }
-      
-      return;
+      }, 500);
     }
-    
-    /* ==================== STATE RESET: READY ==================== */
-    setTimeout(()=>{ this.progOff(); }, 500);
-    this.busy=false; 
-    this.scanning(false);
-    this.deliver(cands, texts, regions);
+  },
+  
+  /* Yardımcı: Canvas klonla */
+  cloneCanvas(c){
+    const n = document.createElement('canvas');
+    n.width = c.width;
+    n.height = c.height;
+    n.getContext('2d').drawImage(c, 0, 0);
+    return n;
+  },
+  
+  /* Yardımcı: Plaka normalize et */
+  normalizePlate(raw){
+    return (raw || '').toUpperCase()
+      .replace(/[İIı]/g, 'I')
+      .replace(/[^A-Z0-9]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   },
 
   /* ---- sonucu göster ve kullanıcıya doğrulat --- */
@@ -3934,40 +3889,32 @@ const Cam = {
   },
   show(){ $('#camOut').classList.add('show'); $('#camActions').classList.add('show'); },
 
-  /* ---- ULTRA GÜÇ TANIMA MOTORU (bir kez kurulur, sonra yeniden kullanılır) ---- */
+  /* ---- BASIT TESSERACT WORKER ---- */
   async worker(onP){
     if(this.engine) return this.engine;
+    
     if(!window.Tesseract){
       await new Promise((res,rej)=>{
         const s=document.createElement('script');
-        s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
-        s.onload=res; s.onerror=()=>rej(new Error('tanıma kütüphanesi indirilemedi'));
+        s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js';
+        s.onload=res; s.onerror=()=>rej(new Error('Tesseract yüklenemedi'));
         document.head.appendChild(s);
-        setTimeout(()=>{ if(!window.Tesseract) rej(new Error('zaman aşımı')); }, 60000);
+        setTimeout(()=>{ if(!window.Tesseract) rej(new Error('Tesseract timeout')); }, 60000);
       });
     }
-    this.status('Gelişmiş tanıma motoru hazırlanıyor…');
-    this.prog(10);
     
-    /* Tesseract Worker - OEM 1 (LSTM neural network) maksimum doğruluk için */
+    this.status('Okuma motoru hazırlanıyor…');
+    
     const w = await Tesseract.createWorker('eng', 1, {
-      logger: m => { if(m.status==='recognizing text' && onP) onP(m.progress||0); },
-      errorHandler: err => console.warn('Tesseract uyarı:', err)
+      logger: m => { if(m.status==='recognizing text' && onP) onP(m.progress||0); }
     });
     
-    /* BAŞLANGIÇ PARAMETRELERİ - Plaka okumaya özel YUMU optimizesAK */
-    try{ 
-      await w.setParameters({
-        tessedit_char_whitelist: '0123456789ABCDEFGHJKLMNOPRSTUVYZ ',
-        tessedit_pageseg_mode: '7',
-        /* LSTM engine kullan (en doğru) */
-        tessedit_ocr_engine_mode: '1'
-      }); 
-    }catch(e){ console.warn('Tesseract parametre hatası:', e); }
+    await w.setParameters({
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPRSTUVYZ0123456789 '
+    });
     
     this.engine = w;
     this.engineTried = true;
-    this.status('Motor hazır - plaka okumaya başlayabilirsiniz');
     return w;
   },
   releaseEngine(){
