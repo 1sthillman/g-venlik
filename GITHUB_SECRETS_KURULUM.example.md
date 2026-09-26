@@ -17,25 +17,33 @@
 
 ### 1.1. GitHub Repository Settings'e Git
 ```
-https://github.com/1sthillman/g-venlik/settings/secrets/actions
+https://github.com/KULLANICI_ADI/REPO_ADI/settings/secrets/actions
 ```
 
 ### 1.2. Her Bir Key için "New repository secret" butonuna tıkla
 
 #### ✅ Secret 1: OCR_KEY_1
 - **Name**: `OCR_KEY_1` (TAM OLARAK BU İSİM - büyük/küçük harf önemli!)
-- **Secret**: `K81442206688957`
+- **Secret**: `BURAYA_KENDI_API_KEY_1_YAZIN`
 - ➜ "Add secret" tıkla
 
 #### ✅ Secret 2: OCR_KEY_2
 - **Name**: `OCR_KEY_2`
-- **Secret**: `K83546183188957`
+- **Secret**: `BURAYA_KENDI_API_KEY_2_YAZIN`
 - ➜ "Add secret" tıkla
 
 #### ✅ Secret 3: OCR_KEY_3
 - **Name**: `OCR_KEY_3`
-- **Secret**: `K83515335988957`
+- **Secret**: `BURAYA_KENDI_API_KEY_3_YAZIN`
 - ➜ "Add secret" tıkla
+
+**API Key Almak İçin:**
+```
+https://ocr.space/ocrapi
+→ Email ile ücretsiz kayıt
+→ 25,000 istek/ay per key
+→ 3 email = 75,000 istek/ay toplam
+```
 
 ---
 
@@ -49,9 +57,6 @@ Repository secrets
 └─ OCR_KEY_3  ✓ Updated X ago
 ```
 
-**Eski Secret varsa:**
-- `OCR_CONFIG_JS` → SİLEBİLİRSİNİZ (artık kullanılmıyor)
-
 ---
 
 ## 🔄 ADIM 3: Deployment Tetikle
@@ -64,7 +69,7 @@ git push
 ```
 
 ### Manuel:
-1. Git: https://github.com/1sthillman/g-venlik/actions
+1. Git: https://github.com/KULLANICI_ADI/REPO_ADI/actions
 2. "Deploy to GitHub Pages" workflow'unu seç
 3. "Run workflow" → "Run workflow" tıkla
 
@@ -74,14 +79,14 @@ git push
 
 ### 4.1. Workflow Başarılı mı?
 ```
-https://github.com/1sthillman/g-venlik/actions
+https://github.com/KULLANICI_ADI/REPO_ADI/actions
 ```
 - ✅ Yeşil tik olmalı
 - ❌ Kırmızı X varsa: workflow loglarını kontrol et
 
 ### 4.2. GitHub Pages Çalışıyor mu?
 ```
-https://1sthillman.github.io/g-venlik/
+https://KULLANICI_ADI.github.io/REPO_ADI/
 ```
 
 **F12 Console'da OLMAMALI:**
@@ -126,24 +131,6 @@ typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.apiKeys.length
 1. Actions sekmesinde başarısız workflow'u aç
 2. "Create OCR Config from Secrets" adımını kontrol et
 3. Hatayı oku - genelde secret ismi yanlış
-
----
-
-### ❌ Problem: Config Yüklendi Ama OCR Çalışmıyor
-**Sebep:** API key'ler geçersiz veya limit aşıldı
-
-**Test:**
-```javascript
-// Console'a yapıştır
-fetch('https://api.ocr.space/parse/image', {
-  method: 'POST',
-  headers: { 'apikey': OCR_CONFIG.apiKeys[0] },
-  body: new FormData()
-}).then(r => console.log('Status:', r.status))
-```
-
-**Beklenen:** `Status: 200` veya `Status: 400` (key çalışıyor)
-**Hatalı:** `Status: 401` (key geçersiz) veya `Status: 429` (limit)
 
 ---
 
@@ -194,7 +181,7 @@ fetch('https://api.ocr.space/parse/image', {
 - API key'ler GitHub kodunda YOK
 - Secrets şifrelenmiş saklanır
 - Sadece deployment sırasında kullanılır
-- `ocr-config.js` .gitignore'da
+- Dokümantasyon dosyaları .gitignore'da
 
 ❌ **AÇIKTA DEĞİL:**
 - Repository'de key göremezsiniz

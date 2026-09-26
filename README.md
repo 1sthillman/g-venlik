@@ -1,112 +1,179 @@
-# g-venlik
+# 🚗 Çınarköy Güvenlik - Plaka Tanıma Sistemi
 
-🚀 Çınarköy Güvenlik Sistemi - Profesyonel Plaka Tanıma
+Modern web teknolojileri ile geliştirilmiş, kamera tabanlı plaka okuma ve nöbet takip sistemi.
 
-[![Deploy Status](https://github.com/1sthillman/g-venlik/actions/workflows/pages.yml/badge.svg)](https://github.com/1sthillman/g-venlik/actions/workflows/pages.yml)
+## ✨ Özellikler
 
-## 🎯 TRIPLE KEY OCR.space Sistemi - 75,000 İstek/Ay! 🚀
+- 📸 **Kamera ile Plaka Okuma**: OCR.space API + Tesseract.js dual system
+- 🔄 **Otomatik Key Rotation**: 3 API key ile 75,000 istek/ay kapasite
+- 🗺️ **İnteraktif Site Haritası**: Gerçek fotoğraf üzerinde hotspot seçimi
+- 📊 **Gelişmiş Raporlama**: Excel export, QR kod, istatistikler
+- 🔍 **Akıllı Arama**: Plaka, isim, firma filtreleme
+- 🎯 **Responsive Tasarım**: Mobil ve desktop uyumlu
+- 🔒 **Güvenli**: API key'ler GitHub'da asla açıkta değil
 
-**Akıllı plaka tanıma + GitHub güvenliği + 3x API key rotation**
+## 🚀 Kurulum
 
-### ✨ Özellikler
-- 🔑 **Triple Key System**: 3x25,000 = **75,000 istek/ay**
-- 🔒 **GitHub Güvenliği**: API key'ler `.gitignore`'da (güvende)
-- 🔄 **Otomatik Rotation**: Rate limit → otomatik key değişimi
-- 🎯 **Akıllı Kırpma**: TR/Logo/Çerçeve filtreleme
-- 🧹 **20+ Kelime Blacklist**: Gereksiz yazıları temizler
-- 🚀 **%85-95 Doğruluk**: OCR.space Engine 2 optimize
-- ⚡ **2-3 Saniye**: Ultra hızlı okuma
-- 🛡️ **Tesseract Fallback**: Yedek motor
-
-### 🔑 API Kapasitesi
-```
-Key 1: 25,000 istek/ay
-Key 2: 25,000 istek/ay  
-Key 3: 25,000 istek/ay
-━━━━━━━━━━━━━━━━━━━━━━━
-TOPLAM: 75,000 istek/ay
-Günlük: ~2,500 istek
-Saatlik: ~104 istek
-```
-
-### 🚀 Hızlı Kurulum
+### 1. Repository'yi Klonlayın
 ```bash
-# 1. Projeyi kopyala
 git clone https://github.com/1sthillman/g-venlik.git
 cd g-venlik
+```
 
-# 2. Config oluştur
+### 2. OCR API Key'lerini Yapılandırın
+
+#### Local Geliştirme İçin:
+```bash
 cp ocr-config.example.js ocr-config.js
-
-# 3. Kendi API key'lerini ekle (ocr-config.js)
-# https://ocr.space/ocrapi adresinden alın
-
-# 4. Çalıştır
-python -m http.server 8000
 ```
 
-Detaylı kurulum: **[KURULUM.md](KURULUM.md)**
-
-### 🔒 Güvenlik
-```
-✅ ocr-config.js → .gitignore'da (GitHub'a yüklenmez)
-✅ ocr-config.example.js → Şablon dosya (GitHub'da)
-✅ API key'ler güvende
-```
-
-### 📁 Dosyalar
-- **`index.html`** → Ana proje (triple key aktif ✅)
-- **`ocr-config.js`** → API key'ler (GİZLİ - .gitignore)
-- **`ocr-config.example.js`** → Şablon dosya (public)
-- **`KURULUM.md`** → Detaylı kurulum kılavuzu
-- **`OCR_ENTEGRASYON_DOKUMANI.md`** → Teknik detaylar
-
-### 🎯 Akıllı Özellikler
-```
-1. Akıllı Plaka Bölge Kırpma
-   ├─ Satır yoğunluk analizi
-   ├─ Merkez %70 kırpma
-   └─ TR/Logo/Çerçeve filtreleme
-
-2. Blacklist Filtreleme (20+ kelime)
-   ├─ TR, TURKEY, TÜRKIYE
-   ├─ WWW, HTTP, COM
-   ├─ PLAKA, LICENSE, RENT
-   └─ TEL, GSM, MOBIL
-
-3. Otomatik Key Rotation
-   ├─ Rate limit (429) → Key 2
-   ├─ Network error → Backup key
-   └─ Tüm key'ler dolu → Tesseract
-```
-
-### 📊 Performans
-| Metrik | Değer |
-|--------|-------|
-| Kapasite | 75,000/ay |
-| Hız | 2-3 saniye |
-| Doğruluk | %85-95 |
-| Dosya boyutu | <200KB (kırpma sonrası) |
-
-### 🧪 Test
+`ocr-config.js` dosyasını açın ve kendi API key'lerinizi ekleyin:
 ```javascript
-// Console'da kontrol:
-console.log(OCR_CONFIG);
-// { apiKeys: [3 keys], totalCapacity: {monthly: 75000} }
+apiKeys: [
+  'KENDI_KEY_1',
+  'KENDI_KEY_2',
+  'KENDI_KEY_3'
+]
 ```
 
+**API Key Almak İçin:**
+- https://ocr.space/ocrapi
+- Ücretsiz: 25,000 istek/ay per email
+- 3 email ile 75,000 istek/ay toplam
+
+#### GitHub Pages İçin:
+1. Repository Settings → Secrets and variables → Actions
+2. 3 secret ekleyin:
+   - `OCR_KEY_1`
+   - `OCR_KEY_2`
+   - `OCR_KEY_3`
+
+Detaylı kurulum: `GITHUB_SECRETS_KURULUM.example.md`
+
+### 3. Local Test
+```bash
+# Basit HTTP server başlatın
+python -m http.server 8000
+# veya
+npx serve
+```
+
+Tarayıcıda açın: `http://localhost:8000`
+
+## 📂 Proje Yapısı
+
+```
+g-venlik/
+├── index.html                          # Ana uygulama
+├── ocr-config.example.js              # API config template
+├── .gitignore                         # API key'leri koru
+├── .github/workflows/deploy.yml       # GitHub Pages deployment
+└── README.md                          # Bu dosya
+```
+
+## 🔐 Güvenlik
+
+### API Key Koruması
+- ✅ `ocr-config.js` → `.gitignore`'da (GitHub'a asla yüklenmesin)
+- ✅ GitHub Secrets kullanımı (deployment için)
+- ✅ Dokümantasyon dosyaları → `.gitignore`'da
+- ❌ API key'ler asla kodda olmamalı
+
+### .gitignore İçeriği
+```
+# API Keys
+ocr-config.js
+
+# Documentation with keys
+OCR_SPACE_ENTEGRASYON_DOKUMANI.md
+GITHUB_PAGES_KURULUM.md
+GITHUB_SECRETS_KURULUM.md
+OCR_ENTEGRASYON_DOKUMANI.md
+```
+
+## 🛠️ Teknolojiler
+
+- **Frontend**: Vanilla JavaScript (ES6+), HTML5, CSS3
+- **OCR**: OCR.space API (primary) + Tesseract.js (fallback)
+- **QR**: QRCode.js
+- **Excel**: SheetJS (xlsx)
+- **Deployment**: GitHub Pages + GitHub Actions
+
+## 📊 OCR Sistemi
+
+### Dual OCR Engine
+1. **OCR.space** (Primary)
+   - 3 API key rotation
+   - 75,000 istek/ay toplam
+   - Engine 2 (plaka için optimize)
+   
+2. **Tesseract.js** (Fallback)
+   - OCR.space başarısız olursa
+   - Offline çalışma desteği
+   - 3 farklı model (opencv, opencv-light, basic)
+
+### Akıllı Özellikler
+- 📏 Otomatik plaka bölgesi tespiti
+- 🧹 Gereksiz yazı filtreleme (TR, logo, çerçeve yazıları)
+- 🎯 Türk plaka format tespiti: `[2 rakam] [1-3 harf] [2-4 rakam]`
+- 🔄 Otomatik key rotation (rate limit durumunda)
+- ✅ Plausibility scoring (geçerli plaka kontrolü)
+
+## 🚀 Deployment
+
+### GitHub Pages (Otomatik)
+```bash
+git add .
+git commit -m "Update"
+git push
+```
+
+GitHub Actions otomatik olarak:
+1. Secrets'lerden `ocr-config.js` oluşturur
+2. GitHub Pages'e deploy eder
+3. 2-3 dakika içinde live olur
+
+URL: `https://KULLANICI_ADI.github.io/REPO_ADI/`
+
+## 📖 Kullanım
+
+### Plaka Okuma
+1. "Kamera" sekmesine gidin
+2. Kamera iznini verin
+3. Plakayı çerçeveye hizalayın
+4. Deklanşöre basın
+5. OCR otomatik okur
+6. Sonucu onaylayın veya düzeltin
+
+### Nöbet Takibi
+1. "Liste" sekmesinde arama yapın
+2. Site seçin
+3. Plaka okutun veya manuel girin
+4. Nöbetçi bilgilerini kaydedin
+
+### Raporlama
+1. "İstatistik" sekmesine gidin
+2. Excel export veya QR kod oluşturun
+3. Zaman aralığı filtreleyin
+
+## 🤝 Katkıda Bulunma
+
+1. Fork yapın
+2. Feature branch oluşturun (`git checkout -b feature/amazing`)
+3. Commit yapın (`git commit -m 'Add amazing feature'`)
+4. Push edin (`git push origin feature/amazing`)
+5. Pull Request açın
+
+**Not**: API key'lerinizi asla commit etmeyin!
+
+## 📝 Lisans
+
+Bu proje özel kullanım için geliştirilmiştir.
+
+## 📧 İletişim
+
+Sorularınız için GitHub Issues kullanın.
+
 ---
 
-## Diğer Özellikler
-- 🎯 OpenCV.js görüntü işleme
-- 📸 Burst mode kare seçimi
-- ⚡ Rock-solid state management
-- 🔦 Flaş/torch desteği
-- 📱 Pinch-zoom kontrolleri
-- 🎨 Modern responsive arayüz
-- 👥 Kurye yönetimi
-- 📊 İstatistikler ve CSV export
-
----
-
-**⚠️ UYARI**: `ocr-config.js` dosyasını GitHub'a yüklemeyin! Kendi key'lerinizi kullanın.
+**⚠️ UYARI**: `ocr-config.js` ve dokümantasyon dosyalarını `.gitignore`'da tutun. API key'lerinizi asla paylaşmayın!
