@@ -2829,7 +2829,8 @@ const Cam = {
       
       /* Video tıklamayla odaklanma özelliği */
       v.onclick = async (e) => {
-        const track = this.stream?.getVideoTracks()?.[0];
+        const tracks = this.stream ? this.stream.getVideoTracks() : [];
+        const track = tracks[0];
         if(!track) return;
         
         const rect = v.getBoundingClientRect();
@@ -2837,23 +2838,25 @@ const Cam = {
         const y = (e.clientY - rect.top) / rect.height;
         
         try{
-          const cap = track.getCapabilities?.();
-          if(cap?.focusMode?.includes('manual')){
-            await track.applyConstraints({ 
-              advanced: [{ focusMode: 'manual', focusDistance: 0.5 }] 
-            });
-            setTimeout(async () => {
-              try{
-                await track.applyConstraints({ 
-                  advanced: [{ focusMode: 'continuous' }] 
-                });
-              }catch(e){}
-            }, 300);
-            const flash = document.createElement('div');
-            flash.style.cssText = `position:absolute;left:${e.clientX-rect.left-25}px;top:${e.clientY-rect.top-25}px;width:50px;height:50px;border:2px solid var(--amber);border-radius:50%;pointer-events:none;animation:focusRing .5s ease-out`;
-            v.parentElement.appendChild(flash);
-            setTimeout(() => flash.remove(), 500);
+          if(typeof track.getCapabilities === 'function'){
+            const cap = track.getCapabilities();
+            if(cap && cap.focusMode && cap.focusMode.includes('manual')){
+              await track.applyConstraints({ 
+                advanced: [{ focusMode: 'manual', focusDistance: 0.5 }] 
+              });
+              setTimeout(async () => {
+                try{
+                  await track.applyConstraints({ 
+                    advanced: [{ focusMode: 'continuous' }] 
+                  });
+                }catch(e){}
+              }, 300);
+            }
           }
+          const flash = document.createElement('div');
+          flash.style.cssText = `position:absolute;left:${e.clientX-rect.left-25}px;top:${e.clientY-rect.top-25}px;width:50px;height:50px;border:2px solid var(--amber);border-radius:50%;pointer-events:none;animation:focusRing .5s ease-out`;
+          v.parentElement.appendChild(flash);
+          setTimeout(() => flash.remove(), 500);
         }catch(err){
           console.log('Odak ayarı desteklenmiyor:', err);
         }
