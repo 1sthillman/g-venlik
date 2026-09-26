@@ -3667,23 +3667,24 @@ const Cam = {
       
       /* Preprocessing varyantları - Basit ve etkili */
       const methods = [
-        { mode: 'otsu', psm: '7' },     // Otsu binary - tek satır
-        { mode: 'sharp', psm: '7' },    // Keskinleştirme - tek satır
-        { mode: 'otsu', psm: '6' },     // Otsu binary - blok
-        { mode: 'stretch', psm: '6' },  // Kontrast - blok
-        { mode: 'otsu', psm: '3' }      // Otsu binary - auto
+        { mode: 'otsu', psm: '7' },      // Binary - tek satır (araç plakaları)
+        { mode: 'otsu', psm: '8' },      // Binary - tek kelime
+        { mode: 'sharp', psm: '7' },     // Keskinleştirme - tek satır
+        { mode: 'otsu', psm: '6' },      // Binary - tek blok (motor)
+        { mode: 'stretch', psm: '6' },   // Kontrast - blok
+        { mode: 'otsu', psm: '11' }      // Binary - seyrek metin
       ];
       
       if(CV_READY){
         methods.unshift({ mode: 'opencv', psm: '7' }); // OpenCV varsa en başa ekle
+        methods.splice(3, 0, { mode: 'opencv', psm: '6' }); // Blok modu da ekle
       }
       
-      /* OKUMA PARAMETRELERİ */
+      /* OKUMA PARAMETRELERİ - BASİT VE ESNEKstr */
       const BASE_PARAMS = { 
-        tessedit_char_whitelist: '0123456789ABCDEFGHJKLMNOPRSTUVYZ',
+        tessedit_char_whitelist: '0123456789ABCDEFGHJKLMNOPRSTUVYZ ',
         preserve_interword_spaces: '1', 
-        user_defined_dpi: '300',
-        tessedit_char_blacklist: 'IOÇŞİĞÜöçşığü'
+        user_defined_dpi: '300'
       };
       
       let lastErr = null;
@@ -3954,22 +3955,13 @@ const Cam = {
       errorHandler: err => console.warn('Tesseract uyarı:', err)
     });
     
-    /* BAŞLANGIÇ PARAMETRELERİ - Plaka okumaya özel optimize */
+    /* BAŞLANGIÇ PARAMETRELERİ - Plaka okumaya özel YUMU optimizesAK */
     try{ 
       await w.setParameters({
-        tessedit_char_whitelist: '0123456789ABCDEFGHJKLMNOPRSTUVYZ',
+        tessedit_char_whitelist: '0123456789ABCDEFGHJKLMNOPRSTUVYZ ',
         tessedit_pageseg_mode: '7',
         /* LSTM engine kullan (en doğru) */
-        tessedit_ocr_engine_mode: '1',
-        /* Gürültü filtreleme */
-        textord_noise_rejwords: '1',
-        textord_noise_rejrows: '1',
-        /* Karakter yüksekliği sınırları */
-        textord_min_xheight: '10',
-        /* Kenar algılama */
-        edges_use_new_outline_complexity: '1',
-        /* Sayısal mod - plakalar için kritik */
-        classify_bln_numeric_mode: '1'
+        tessedit_ocr_engine_mode: '1'
       }); 
     }catch(e){ console.warn('Tesseract parametre hatası:', e); }
     
