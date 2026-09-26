@@ -2817,7 +2817,12 @@ const Cam = {
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
       this.ph('<b>Kamera erişimi yok.</b><br>Tarayıcı bu sayfada kamerayı açmıyor. Dosya olarak açılan uygulamalarda bu sınırlıdır — uygulamayı bir <b>https</b> adresinden açın ya da aşağıdaki düğmeleri kullanın.');
       this.status('Kamera kullanılamıyor', true);
-      $('#camShot').disabled=true; $('#camSwitch').disabled=true; $('#camFocus').disabled=true;
+      const shotBtn = $('#camShot');
+      const switchBtn = $('#camSwitch');
+      const focusBtn = $('#camFocus');
+      if(shotBtn) shotBtn.disabled = true;
+      if(switchBtn) switchBtn.disabled = true;
+      if(focusBtn) focusBtn.disabled = true;
       return;
     }
     this.status('Kamera açılıyor…');
@@ -2869,7 +2874,12 @@ const Cam = {
       };
       
       try{ await v.play(); }catch(e){}
-      $('#camShot').disabled=false; $('#camSwitch').disabled=false; $('#camFocus').disabled=false;
+      const shotBtn = $('#camShot');
+      const switchBtn = $('#camSwitch');
+      const focusBtn = $('#camFocus');
+      if(shotBtn) shotBtn.disabled = false;
+      if(switchBtn) switchBtn.disabled = false;
+      if(focusBtn) focusBtn.disabled = false;
       this.status('Plakayı çerçeveye alın — 2 parmakla çerçeveyi ayarlayın, odak için ekrana dokunun');
       if(P.autoCam) this.autoT=setTimeout(()=>{ if(this.stream) this.shoot(); }, 1500);
     }catch(e){
@@ -2882,7 +2892,8 @@ const Cam = {
         : 'Kamera açılamadı: ' + (e && e.name ? e.name : 'bilinmeyen hata') + (e && e.message ? ' - ' + e.message : '');
       this.ph('<b>'+why+'</b><br>Yine de galeriden plaka fotoğrafı seçebilir ya da plakayı elle yazabilirsiniz.');
       this.status(why, true);
-      $('#camShot').disabled=true;
+      const shotBtn = $('#camShot');
+      if(shotBtn) shotBtn.disabled = true;
     }
   },
   ph(html){ const p=$('#camPh'); p.innerHTML=html; p.style.display='block'; $('#camVideo').style.display='none'; },
