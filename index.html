@@ -283,6 +283,21 @@ body.cam-on{ overflow:hidden; }
 .cam-view .ph{ color:rgba(255,255,255,.6); font-size:13px; text-align:center; padding:24px; line-height:1.65; max-width:34ch; }
 .cam-view .ph b{ color:var(--amber); }
 
+/* Flaş butonu - Sol üst köşe */
+.cam-torch{
+  position:absolute; top:12px; left:12px; z-index:10;
+  width:44px; height:44px; border-radius:13px;
+  background:rgba(18,26,25,.75); border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  display:none; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .2s;
+  box-shadow:0 4px 16px -6px rgba(0,0,0,.7);
+}
+.cam-torch:active{ transform:scale(.92); }
+.cam-torch.on{ background:rgba(255,169,77,.4); border-color:var(--amber); }
+.cam-torch.on svg{ color:var(--amber); }
+.cam-torch svg{ width:20px; height:20px; color:rgba(255,255,255,.85); transition:color .2s; }
+
 /* nişangâh: köşe braketleri + tarama çizgisi + pinch-zoom ile ayarlanabilir */
 .cam-frame{ position:absolute; inset:0; pointer-events:none; }
 
@@ -391,6 +406,66 @@ body.cam-on{ overflow:hidden; }
 }
 .cam-warn svg{ width:16px; height:16px; flex-shrink:0; margin-top:1px; color:#ff9f6e; }
 .cam-warn b{ color:#fff; }
+
+/* Carousel buton - Deklanşör üstünde */
+.cam-carousel{
+  position:absolute; bottom:110px; left:50%; transform:translateX(-50%);
+  width:44px; height:44px; border-radius:50%;
+  background:rgba(18,26,25,.75); border:1px solid rgba(255,255,255,.2);
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .2s; z-index:10;
+  box-shadow:0 4px 16px -6px rgba(0,0,0,.7);
+}
+.cam-carousel:active{ transform:translateX(-50%) scale(.92); }
+.cam-carousel.active{ background:rgba(255,169,77,.35); border-color:var(--amber); }
+.cam-carousel.active svg{ color:var(--amber); transform:rotate(180deg); }
+.cam-carousel svg{ width:20px; height:20px; transition:transform .3s; color:rgba(255,255,255,.85); }
+
+/* Slider panel */
+.cam-panel{
+  position:absolute; bottom:0; left:0; right:0;
+  background:linear-gradient(180deg, rgba(6,12,11,0) 0%, rgba(6,12,11,.95) 20%);
+  padding:16px 20px calc(80px + env(safe-area-inset-bottom,0px));
+  transform:translateY(100%); transition:transform .3s cubic-bezier(.22,.9,.32,1);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  z-index:5;
+}
+.cam-panel.show{ transform:translateY(0); }
+.cam-slider{
+  display:flex; flex-direction:column; gap:18px;
+}
+.cam-slider-row{
+  display:flex; flex-direction:column; gap:8px;
+}
+.cam-slider-label{
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:12px; font-weight:600; color:rgba(255,255,255,.7);
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.cam-slider-value{
+  color:var(--amber); font-size:13px; font-weight:700;
+}
+.cam-slider-input{
+  -webkit-appearance:none; appearance:none; width:100%; height:6px;
+  background:rgba(255,255,255,.15); border-radius:3px; outline:0;
+  cursor:pointer;
+}
+.cam-slider-input::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none;
+  width:20px; height:20px; border-radius:50%;
+  background:var(--amber); cursor:pointer;
+  box-shadow:0 2px 8px rgba(255,169,77,.5);
+  transition:transform .15s;
+}
+.cam-slider-input::-webkit-slider-thumb:active{
+  transform:scale(1.15);
+}
+.cam-slider-input::-moz-range-thumb{
+  width:20px; height:20px; border-radius:50%; border:0;
+  background:var(--amber); cursor:pointer;
+  box-shadow:0 2px 8px rgba(255,169,77,.5);
+}
 
 /* alt çubuk */
 .cam-bar{
@@ -1330,9 +1405,17 @@ body.cam-on{ overflow:hidden; }
   <div class="cam-view" id="camView">
     <div class="ph" id="camPh">Kamera başlatılıyor…</div>
     <video id="camVideo" playsinline autoplay muted style="display:none"></video>
+    
+    <!-- Flaş butonu -->
+    <button class="cam-torch" id="camTorch" type="button" title="Flaş">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+    </button>
+    
     <div class="cam-frame">
-      <div class="cam-overlay"></div>
-      <div class="cam-guide"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b><i></i><u>Plakayı çerçeveye alın</u></div>
+      <div class="cam-overlay" id="camOverlay"></div>
+      <div class="cam-guide" id="camGuide"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b><i></i><u>Plakayı çerçeveye alın</u></div>
     </div>
     <div class="cam-warn" id="camWarn" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
@@ -1355,6 +1438,40 @@ body.cam-on{ overflow:hidden; }
   <div class="cam-actions" id="camActions">
     <button class="btn btn-ghost" id="camAgain" type="button">Tekrar Çek</button>
     <button class="btn btn-primary" id="camUse" type="button">Kullan</button>
+  </div>
+
+  <!-- Carousel buton -->
+  <button class="cam-carousel" id="camCarousel" type="button" title="Ayarlar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m18 15-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <!-- Slider panel -->
+  <div class="cam-panel" id="camPanel">
+    <div class="cam-slider">
+      <div class="cam-slider-row">
+        <div class="cam-slider-label">
+          <span>Çerçeve Genişlik</span>
+          <span class="cam-slider-value" id="frameWidthValue">86%</span>
+        </div>
+        <input type="range" class="cam-slider-input" id="frameWidth" min="50" max="95" value="86" step="1">
+      </div>
+      <div class="cam-slider-row">
+        <div class="cam-slider-label">
+          <span>Çerçeve Yükseklik</span>
+          <span class="cam-slider-value" id="frameHeightValue">28%</span>
+        </div>
+        <input type="range" class="cam-slider-input" id="frameHeight" min="15" max="40" value="28" step="1">
+      </div>
+      <div class="cam-slider-row">
+        <div class="cam-slider-label">
+          <span>Zoom</span>
+          <span class="cam-slider-value" id="zoomValue">1.0x</span>
+        </div>
+        <input type="range" class="cam-slider-input" id="zoomSlider" min="10" max="40" value="10" step="1">
+      </div>
+    </div>
   </div>
 
   <div class="cam-bar">
@@ -3231,6 +3348,28 @@ const Cam = {
   /* Okuma alanı ayarları - dar alan = hızlı okuma */
   cropArea: { top:36, height:28, lastHeight:28, startDist:0, startTop:0, startHeight:0 },
 
+  /* Overlay güncelleme - Çerçeve hareket edince dinamik karartma */
+  updateOverlay(){
+    const overlay = $('#camOverlay');
+    const guide = $('#camGuide');
+    if(!overlay || !guide) return;
+    
+    const viewRect = $('#camView').getBoundingClientRect();
+    const guideRect = guide.getBoundingClientRect();
+    
+    // Çerçevenin pozisyonunu viewport'a göre hesapla
+    const left = ((guideRect.left - viewRect.left) / viewRect.width * 100).toFixed(2);
+    const top = ((guideRect.top - viewRect.top) / viewRect.height * 100).toFixed(2);
+    const right = ((viewRect.right - guideRect.right) / viewRect.width * 100).toFixed(2);
+    const bottom = ((viewRect.bottom - guideRect.bottom) / viewRect.height * 100).toFixed(2);
+    
+    // Clip-path ile çerçeve dışını karart
+    overlay.style.clipPath = `polygon(
+      0 0, 100% 0, 100% 100%, 0 100%, 0 0,
+      ${left}% ${top}%, ${left}% ${100-bottom}%, ${100-right}% ${100-bottom}%, ${100-right}% ${top}%, ${left}% ${top}%
+    )`;
+  },
+
   status(t, kind){ const e=$('#camSub'); if(e) e.textContent=t||''; if(kind!==undefined) $('#camStatus').classList.toggle('bad',!!kind); },
   say(t){ const e=$('#camStatus'); if(e) e.textContent=t||''; },
   prog(p){ const b=$('#camProg'); if(!b) return; b.style.display='block'; b.firstElementChild.style.width=Math.max(0,Math.min(100,p))+'%'; },
@@ -3362,6 +3501,7 @@ const Cam = {
     if(!guide) return;
     guide.style.top = this.cropArea.top + '%';
     guide.style.height = this.cropArea.height + '%';
+    this.updateOverlay(); // Overlay'i de güncelle
   },
   
   /* Okuma sırasında sadece ayarlanan alanı kullan */
@@ -3486,13 +3626,14 @@ const Cam = {
           
           /* Torch (flaş ışığı) - karanlık ortamlar için */
           if(capabilities.torch){
-            // Başlangıçta kapalı, gerekirse kullanıcı açar
-            constraints.torch = false;
+            constraints.torch = false; // Başlangıçta kapalı
+            this.torchAvailable = true;
+            this.torchOn = false;
+            
             // Torch butonunu göster
             const torchBtn = $('#camTorch');
             if(torchBtn){
               torchBtn.style.display = 'flex';
-              this.torchAvailable = true;
             }
           }
           
@@ -3586,6 +3727,10 @@ const Cam = {
       if(shotBtn) shotBtn.disabled = false;
       if(switchBtn) switchBtn.disabled = false;
       if(focusBtn) focusBtn.disabled = false;
+      
+      // Overlay'i ilk kez initialize et
+      setTimeout(() => this.updateOverlay(), 100);
+      
       this.status('TEK PARMAK: Çerçeveyi taşı · İKİ PARMAK: Boyutlandır · DOKUN: Odaklan');
       /* Otomatik okuma KALDIRILDI - Sadece butona basınca okusun */
     }catch(e){
@@ -4358,6 +4503,91 @@ $('#camSwitch').onclick=()=>{ Cam.facing = Cam.facing==='environment'?'user':'en
 $('#camType').onclick=()=>{ const m=(Cam.ctx&&Cam.ctx.mode)||Cam.ctxMode; Cam.close(); plateTypeDialog(m); };
 $('#camAgain').onclick=()=>{ Cam.reset(); Cam.status('Plakayı çerçeveye alın'); };
 $('#camGallery').onclick=()=>{ $('#camFile').click(); };
+
+/* Carousel buton - Panel aç/kapa */
+$('#camCarousel').onclick=()=>{
+  const panel = $('#camPanel');
+  const carousel = $('#camCarousel');
+  const isOpen = panel.classList.contains('show');
+  
+  if(isOpen){
+    panel.classList.remove('show');
+    carousel.classList.remove('active');
+  }else{
+    panel.classList.add('show');
+    carousel.classList.add('active');
+  }
+};
+
+/* Flaş butonu */
+$('#camTorch').onclick=async ()=>{
+  if(!Cam.stream || !Cam.torchAvailable) return;
+  
+  const tracks = Cam.stream.getVideoTracks();
+  if(tracks.length === 0) return;
+  
+  const track = tracks[0];
+  try{
+    Cam.torchOn = !Cam.torchOn;
+    await track.applyConstraints({ advanced: [{ torch: Cam.torchOn }] });
+    
+    const btn = $('#camTorch');
+    if(Cam.torchOn){
+      btn.classList.add('on');
+      toast('Flaş açıldı', 'ok');
+    }else{
+      btn.classList.remove('on');
+      toast('Flaş kapatıldı', 'ok');
+    }
+  }catch(e){
+    console.error('Flaş ayarı başarısız:', e);
+    toast('Flaş değiştirilemedi', 'err');
+  }
+};
+
+/* Slider kontrolleri */
+$('#frameWidth').oninput=(e)=>{
+  const val = e.target.value;
+  $('#frameWidthValue').textContent = val + '%';
+  const guide = $('#camGuide');
+  const leftRight = (100 - val) / 2;
+  guide.style.left = leftRight + '%';
+  guide.style.right = leftRight + '%';
+  Cam.updateOverlay();
+};
+
+$('#frameHeight').oninput=(e)=>{
+  const val = e.target.value;
+  $('#frameHeightValue').textContent = val + '%';
+  const guide = $('#camGuide');
+  const currentTop = parseFloat(guide.style.top || '36');
+  guide.style.height = val + '%';
+  // Merkezde tut
+  const newTop = Math.max(5, Math.min(95 - val, 50 - val/2));
+  guide.style.top = newTop + '%';
+  Cam.updateOverlay();
+};
+
+$('#zoomSlider').oninput=async (e)=>{
+  const val = e.target.value;
+  const zoom = (val / 10).toFixed(1);
+  $('#zoomValue').textContent = zoom + 'x';
+  
+  const tracks = Cam.stream ? Cam.stream.getVideoTracks() : [];
+  if(tracks.length > 0){
+    const track = tracks[0];
+    const cap = track.getCapabilities();
+    if(cap.zoom){
+      try{
+        const zoomValue = cap.zoom.min + (cap.zoom.max - cap.zoom.min) * (val - 10) / 30;
+        await track.applyConstraints({ advanced: [{ zoom: zoomValue }] });
+      }catch(e){
+        console.warn('Zoom ayarı başarısız:', e);
+      }
+    }
+  }
+};
+
 $('#camFile').addEventListener('change', e=>{
   const f=e.target.files && e.target.files[0]; if(!f) return;
   const img=new Image(), url=URL.createObjectURL(f);
