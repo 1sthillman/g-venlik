@@ -269,9 +269,13 @@ body.cam-on{ overflow:hidden; }
 .cam-view .ph{ color:rgba(255,255,255,.6); font-size:13px; text-align:center; padding:24px; line-height:1.65; max-width:34ch; }
 .cam-view .ph b{ color:var(--amber); }
 
-/* nişangâh: köşe braketleri + tarama çizgisi */
+/* nişangâh: köşe braketleri + tarama çizgisi + pinch-zoom ile ayarlanabilir */
 .cam-frame{ position:absolute; inset:0; pointer-events:none; }
-.cam-guide{ position:absolute; left:7%; right:7%; top:36%; height:28%; }
+.cam-guide{ 
+  position:absolute; left:7%; right:7%; top:36%; height:28%; 
+  touch-action:none; pointer-events:auto; transition:all .2s ease-out;
+}
+.cam-guide.adjusting{ transition:none; }
 .cam-guide b{
   position:absolute; width:24px; height:24px; border:2.5px solid var(--amber); border-radius:5px;
   filter:drop-shadow(0 0 6px rgba(255,169,77,.5));
@@ -289,10 +293,12 @@ body.cam-on{ overflow:hidden; }
 @keyframes camScan{ 0%,100%{ top:6%; opacity:.35; } 50%{ top:94%; opacity:1; } }
 #camSheet.scanning .cam-guide i{ animation-duration:.75s; }
 .cam-guide u{
-  position:absolute; left:0; right:0; bottom:-22px; text-decoration:none;
-  text-align:center; font-size:10.5px; letter-spacing:.13em; text-transform:uppercase;
+  position:absolute; left:0; right:0; bottom:-26px; text-decoration:none;
+  text-align:center; font-size:10px; letter-spacing:.11em; text-transform:uppercase;
   color:var(--amber); font-weight:700; text-shadow:0 1px 6px rgba(0,0,0,.9);
+  line-height:1.3;
 }
+.cam-guide u::after{ content:'\ADAR ALAN = HIZLI OKUMA'; white-space:pre; display:block; font-size:9px; opacity:.8; margin-top:2px; }
 
 /* sonuç kartı — görüntünün üstünde */
 .cam-out{
@@ -1010,7 +1016,12 @@ body.cam-on{ overflow:hidden; }
 <!-- ===== kurye + plaka ===== -->
 <div class="modal-backdrop" id="courierModal">
   <div class="modal wide">
-    <h3>Teslimat kaydı</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Teslimat kaydı</h3>
+      <button class="icon-btn sm" id="cancelCourierBtn" style="width:32px;height:32px" title="Kapat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
     <p id="courierModalText">Kuryenin adını yazın, mikrofonla söyleyin veya plakayı okutun.</p>
     <div id="courierPlateBox" style="margin-bottom:12px">
       <div class="mrow">
@@ -1082,7 +1093,12 @@ body.cam-on{ overflow:hidden; }
 <!-- ===== paylaşım ===== -->
 <div class="modal-backdrop" id="shareModal">
   <div class="modal wide">
-    <h3 id="shareTitle">Paylaş</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 id="shareTitle" style="margin:0">Paylaş</h3>
+      <button class="icon-btn sm" onclick="$('#shareModal').classList.remove('show')" style="width:32px;height:32px" title="Kapat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
     <p id="shareText">Aşağıdaki metni WhatsApp'ta gönderebilir veya doğrudan paylaşabilirsiniz.</p>
     <textarea id="shareArea" rows="6" readonly style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px"></textarea>
     <div class="btn-row" style="margin-top:12px;margin-bottom:0">
@@ -1099,7 +1115,12 @@ body.cam-on{ overflow:hidden; }
 <!-- ===== aktarım ===== -->
 <div class="modal-backdrop" id="syncModal">
   <div class="modal wide">
-    <h3>Telefonlar Arası Aktarım</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Telefonlar Arası Aktarım</h3>
+      <button class="icon-btn sm" id="syncClose" style="width:32px;height:32px" title="Kapat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
     <p>Uygulama çevrimdışı çalışır; bu yüzden kayıtlar ve kurye listesi dosya ile taşınır. Paketi WhatsApp'tan gönderin, karşı taraf "Al" ile güncellenir.</p>
     <div class="btn-row" style="margin-bottom:0"><button class="btn btn-primary" id="syncSend">Paket Oluştur &amp; Gönder</button></div>
     <div class="btn-row" style="margin-top:8px;margin-bottom:0"><button class="btn btn-secondary" id="syncDelta">Sadece Yeni Kayıtlar</button></div>
@@ -1112,7 +1133,12 @@ body.cam-on{ overflow:hidden; }
 <!-- ===== yapıştır ===== -->
 <div class="modal-backdrop" id="pasteModal">
   <div class="modal wide">
-    <h3>Veri paketini yapıştır</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Veri paketini yapıştır</h3>
+      <button class="icon-btn sm" id="pasteCancel" style="width:32px;height:32px" title="Kapat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
     <p>Arkadaşınızın gönderdiği metni buraya yapıştırın.</p>
     <textarea id="pasteArea" rows="7" placeholder="eyJhcHAiOiJjay1ub2JldCIs…"></textarea>
     <div class="btn-row" style="margin-top:12px;margin-bottom:0">
@@ -2011,17 +2037,31 @@ $('#saveCourierBtn').onclick=async ()=>{
 function afterSave(siteName, code, unitRef, rec){
   const site=unitRef?unitRef.site:(SITES.find(s=>s.name===siteName)||null);
   const total=VISITS.filter(v=>v.site===siteName&&v.unit===code).length;
+  
+  /* WhatsApp mesajı hazırla */
+  const waText = `${siteName} · ${code}\n${rec.courier||'—'}\n` +
+                 (rec.plate ? `${rec.plate}\n` : '') +
+                 (rec.company||firmOf(rec.plate,rec.courier) ? `${rec.company||firmOf(rec.plate,rec.courier)}\n` : '') +
+                 `${fmtTR(rec.ts,true)}\n` +
+                 `Görevli: ${rec.guard||'—'}`;
+  
   openActions('Giriş kaydedildi',
     siteName+' '+code+(total>1? ' · bu dairede toplam '+total+' kayıt' : ''),
     [
-      { ico:ic('map',17), t:'Planda göster', s:siteName+' '+code+' — uygulama içi planda işaretle', primary:true,
+      { ico:ic('send',17), t:'WhatsApp\'a gönder', s:'Bu kaydı direkt WhatsApp ile paylaş', primary:true,
+        run:()=>{ 
+          const url = waLink(waText);
+          const w = window.open(url,'_blank');
+          if(!w) toast('Açılama engellendi — metin panoya kopyalandı','err');
+          else toast('WhatsApp açıldı','ok');
+        } 
+      },
+      { ico:ic('map',17), t:'Planda göster', s:siteName+' '+code+' — uygulama içi planda işaretle',
         run:()=>{ focusOnMap(site, code); } },
       { ico:ic('repeat',17), t:'Ardışık kayıt', s:'Aynı daireye bir kurye daha girdiyse hemen kaydet',
         run:()=>{ setTimeout(()=>{ currentUnit=unitRef||currentUnit; openCourierModal(); },320); } },
       { ico:ic('list',17), t:'Kayıt listesinde gör', s:'Tüm giriş kayıtlarını aç',
-        run:()=>{ setTab('log'); } },
-      { ico:ic('nav',17), t:'Google Haritalar\'da aç', s:'Adresi yeni sekmede açar',
-        run:()=>{ openMaps(site, code); } }
+        run:()=>{ setTab('log'); } }
     ]);
 }
 function openActions(title, text, actions){
@@ -2357,46 +2397,62 @@ function medianOf(arr){
   const a=Array.prototype.slice.call(arr).sort(function(p,q){ return p-q; });
   return a.length? a[a.length>>1] : 0;
 }
-/* Plaka bölgesi adaylarını en iyiden başlayarak sıralı döndürür.
-   TEK aday döndürmek yanlış bölge seçilince okumayı tümden başarısız
-   kılıyordu; bu yüzden birden çok aday denenir.
-   Üç ayrı dedektör birlikte çalışır:
-     1) parlak maske  — beyaz zeminli plaka (gündüz, aydınlık)
-     2) koyu maske    — siyah zeminli plaka (gece, özel plaka)
-     3) kenar maskesi — ne parlak ne koyu: kirli, yansımalı, ters ışıklı   */
+/* GÜÇLÜ PLAKA OKUMA MOTORU - Çoklu strateji ile maksimum doğruluk
+   Üç ayrı dedektör + akıllı birleştirme ile her durumda okur:
+     1) Parlak maske  — beyaz zeminli plaka (gündüz)
+     2) Koyu maske    — siyah/gri plaka (gece, kirli)
+     3) Kenar maskesi — yansımalı, puslu, zor plakalar
+     4) Adaptif eşikler — görüntü kalitesine göre uyarlanır */
 function findPlateRegions(src){
-  const TW=400, TH=Math.max(80, Math.min(600, Math.round(src.height*TW/src.width)));
+  const TW=600, TH=Math.max(120, Math.min(800, Math.round(src.height*TW/src.width)));
   const c=document.createElement('canvas'); c.width=TW; c.height=TH;
   const x=c.getContext('2d',{ willReadFrequently:true });
+  x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high';
   try{ x.drawImage(src,0,0,TW,TH); }catch(e){ return []; }
   let d; try{ d=x.getImageData(0,0,TW,TH).data; }catch(e){ return []; }
   const N=TW*TH, lum=new Uint8Array(N);
-  const mb=new Uint8Array(N), md=new Uint8Array(N), me=new Uint8Array(N);
-  let nb=0, nd=0, ne=0;
+  const mb=new Uint8Array(N), md=new Uint8Array(N), me=new Uint8Array(N), mm=new Uint8Array(N);
+  let nb=0, nd=0, ne=0, nm=0;
+  
+  /* Histogram analizi - adaptif eşikler */
+  const hist=new Array(256).fill(0);
   for(let i=0,p=0;i<d.length;i+=4,p++){
     const v=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
-    lum[p]=v;
-    if(v>=148){ mb[p]=1; nb++; }
-    if(v<60){ md[p]=1; nd++; }          /* çok koyu: neredeyse siyah plaka/çerçeve */
+    lum[p]=v; hist[Math.floor(v)]++;
   }
-  /* 3) kenar enerjisi maskesi — dikey kenarlar (harf sütunları) yatay bir
-     plakada güçlüdür. Ne parlak ne koyu plakaları yakalamak için. */
-  edgeMask(lum, TW, TH, me);
+  const avgLum = lum.reduce((a,b)=>a+b,0)/N;
+  const brightThresh = Math.max(135, Math.min(160, avgLum * 0.95));
+  const darkThresh = Math.max(50, Math.min(80, avgLum * 0.35));
+  
+  for(let p=0;p<N;p++){
+    const v=lum[p];
+    if(v>=brightThresh){ mb[p]=1; nb++; }
+    if(v<darkThresh){ md[p]=1; nd++; }
+    /* Orta ton plakaları (kirli, sisli) */
+    if(v>=80 && v<=180){ mm[p]=1; nm++; }
+  }
+  
+  /* Güçlendirilmiş kenar tespiti */
+  edgeMaskEnhanced(lum, TW, TH, me);
   for(let p=0;p<N;p++) if(me[p]) ne++;
 
   const out=[];
-  const push=(m,cnt,light,boost)=>{
-    if(cnt < N*0.004) return;
+  const push=(m,cnt,light,boost,tag)=>{
+    if(cnt < N*0.002) return;
     const r=regionFromMask(m,TW,TH,src,light);
-    if(r){ r.fit*=boost; out.push(r); }
+    if(r){ r.fit*=boost; r.tag=tag; out.push(r); }
   };
-  push(mb, nb, true,  1.00);
-  push(md, nd, false, 1.00);
-  push(me, ne, null,  0.92);   /* kenar bulgusu biraz daha zayıf sayılır */
+  
+  /* Yüksek öncelik: parlak + koyu + kenar */
+  push(mb, nb, true,  1.15, 'bright');
+  push(md, nd, false, 1.10, 'dark');
+  push(me, ne, null,  1.05, 'edge');
+  push(mm, nm, null,  0.98, 'mid');
 
   if(!out.length) return [];
-  /* aynı yeri gösteren adayları birleştir (IOU benzeri) */
-  out.sort(function(a,b){ return b.fit-a.fit; });
+  
+  /* Akıllı birleştirme + en iyi 7 aday */
+  out.sort((a,b)=>b.fit-a.fit);
   const uniq=[];
   for(const r of out){
     let dup=false;
@@ -2405,15 +2461,33 @@ function findPlateRegions(src){
       const ix=Math.max(0,Math.min(ax[0]+ax[2],bx[0]+bx[2])-Math.max(ax[0],bx[0]));
       const iy=Math.max(0,Math.min(ax[1]+ax[3],bx[1]+bx[3])-Math.max(ax[1],bx[1]));
       const inter=ix*iy, uni=ax[2]*ax[3]+bx[2]*bx[3]-inter;
-      if(inter/Math.max(1,uni) > 0.55){ dup=true; if(r.fit>u.fit) u.fit=r.fit, u.rect=r.rect, u.angle=r.angle, u.light=r.light; break; }
+      if(inter/Math.max(1,uni) > 0.45){ dup=true; 
+        if(r.fit>u.fit){ u.fit=r.fit; u.rect=r.rect; u.angle=r.angle; u.light=r.light; u.tag=r.tag; }
+        break;
+      }
     }
     if(!dup) uniq.push(r);
   }
-  return uniq.slice(0,3);
+  return uniq.slice(0,7);
 }
-/* Yatay kenar enerjisi (Sobel-yatay) — harf sütunlarını vurgular */
+
+/* Geliştirilmiş kenar tespiti - Sobel operatörü ile */
+function edgeMaskEnhanced(lum, W, H, out){
+  const TH=0.045;
+  for(let y=1;y<H-1;y++){
+    const o=y*W;
+    for(let px=1;px<W-1;px++){
+      const i=o+px;
+      const gx=Math.abs(lum[i+1]-lum[i-1]) + Math.abs(lum[i+W+1]-lum[i+W-1]) + Math.abs(lum[i-W+1]-lum[i-W-1]);
+      const gy=Math.abs(lum[i+W]-lum[i-W]) + Math.abs(lum[i+W+1]-lum[i-W+1]) + Math.abs(lum[i+W-1]-lum[i-W-1]);
+      const g=Math.sqrt(gx*gx+gy*gy);
+      if(g>TH*255*3) out[i]=1;
+    }
+  }
+}
+/* Yatay kenar enerjisi - basit versiyon (yedek) */
 function edgeMask(lum, W, H, out){
-  const TH=0.055;
+  const TH=0.048;
   for(let y=1;y<H-1;y++){
     const o=y*W;
     for(let px=1;px<W-1;px++){
@@ -2538,22 +2612,21 @@ function imageQuality(src){
   return { mean:sum/n, sharp:sharp };
 }
 
-/* --- Ön işleme: kırp + ölçek + gri + kontrast germe (+ isteğe bağlı Otsu) --- */
+/* GÜÇLÜ ÖN İŞLEME - Maksimum netlik için optimize edildi */
 function prep(src, rect, mode, scale, angle){
   const r = rect || [0,0,src.width,src.height];
   const sw=Math.max(1,Math.min(src.width, r[2])), sh=Math.max(1,Math.min(src.height, r[3]));
   const sx=Math.max(0,Math.min(src.width-1,r[0])), sy=Math.max(0,Math.min(src.height-1,r[1]));
   let f=scale||1;
-  /* karakterleri yeterince büyük tut: hedef yükseklik ~ 110px, üst sınır 1600px */
-  const want=Math.max(f, 110/(sh||1));
-  /* Geniş kırpmalarda (tam kare 1280x860, "cerceve" bandı 1280x360) Tesseract
-     çok yavaşlıyor ve doğruluk artmıyor — tek deneme 10+ saniye sürebiliyordu.
-     Genişlik 1000px, toplam piksel 420k ile sınırlanır. Küçük plaka
-     kırpmaları bu sınırlardan hiç etkilenmez. */
-  let ratio=Math.min(want, 1600/(Math.max(sw,sh)||1), 1000/(sw||1));
-  const capPx=420000;
+  
+  /* Hedef: 120-140px yükseklik (110'dan daha net) */
+  const want=Math.max(f, 125/(sh||1));
+  
+  /* Performans limitleri - ama daha yüksek kalite */
+  let ratio=Math.min(want, 1800/(Math.max(sw,sh)||1), 1200/(sw||1));
+  const capPx=480000;
   if(sw*sh*ratio*ratio>capPx) ratio=Math.sqrt(capPx/(sw*sh));
-  if(ratio<0.5) ratio=0.5; if(ratio>6) ratio=6;
+  if(ratio<0.6) ratio=0.6; if(ratio>7) ratio=7;
   const rad=((angle||0)*Math.PI)/180;
   /* döndürme yapılacaksa döndürülmüş çerçeveye sığacak kadar boşluk bırak */
   const cw=Math.round(sw*ratio), ch=Math.round(sh*ratio);
@@ -2585,9 +2658,7 @@ function prep(src, rect, mode, scale, angle){
   const span=Math.max(1,hi-lo);
   for(let i=0;i<d.length;i+=4){ let v=(d[i]-lo)*255/span; v=v<0?0:(v>255?255:v); d[i]=d[i+1]=d[i+2]=v; }
   if(mode==='sharp'){
-    /* Unsharp mask — elde sallanan fotoğrafta kenarları geri kazandırır.
-       Tesseract ince, bulanık harflerde çok zorlanır; bu geçiş belirgin
-       fark yaratır. 3x3 Gauss çekirdeği ile 1.1 kazanç. */
+    /* GÜÇLÜ UNSHARP MASK - 3x3 Gauss + 1.25 gain (1.1'den daha keskin) */
     const src2=new Uint8ClampedArray(d);
     const W2=c.width, H2=c.height;
     const K=[1,2,1,2,4,2,1,2,1];
@@ -2598,7 +2669,7 @@ function prep(src, rect, mode, scale, angle){
         let s=0,k=0;
         for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++,k++) s+=src2[i+dy*W2*4+dx*4]*K[k];
         const blur=s/16;
-        let v=src2[i]+1.1*(src2[i]-blur);
+        let v=src2[i]+1.25*(src2[i]-blur);
         v=v<0?0:(v>255?255:v);
         d[i]=d[i+1]=d[i+2]=v;
       }
@@ -2630,12 +2701,77 @@ function preprocess(src, crop, otsu, scale){   /* geriye uyumlu imza */
 const Cam = {
   stream:null, facing:'environment', busy:false, engine:null, engineTried:false,
   ctx:null, ctxMode:'scan', result:null, autoT:null,
+  /* Okuma alanı ayarları - dar alan = hızlı okuma */
+  cropArea: { top:36, height:28, lastHeight:28, startDist:0, startTop:0, startHeight:0 },
 
   status(t, kind){ const e=$('#camSub'); if(e) e.textContent=t||''; if(kind!==undefined) $('#camStatus').classList.toggle('bad',!!kind); },
   say(t){ const e=$('#camStatus'); if(e) e.textContent=t||''; },
   prog(p){ const b=$('#camProg'); if(!b) return; b.style.display='block'; b.firstElementChild.style.width=Math.max(0,Math.min(100,p))+'%'; },
   progOff(){ const b=$('#camProg'); if(b){ b.firstElementChild.style.width='0%'; b.style.display='none'; } },
   scanning(on){ $('#camSheet').classList.toggle('scanning',!!on); $('#camShot').disabled=!!on; },
+
+  /* Okuma alanını pinch ile daralt/genişlet */
+  setupCropArea(){
+    const guide = $('#camView .cam-guide');
+    if(!guide) return;
+    
+    guide.addEventListener('touchstart', (e) => {
+      if(e.touches.length === 2){
+        e.preventDefault();
+        guide.classList.add('adjusting');
+        const dy = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
+        this.cropArea.startDist = dy;
+        this.cropArea.startHeight = this.cropArea.height;
+        this.cropArea.startTop = this.cropArea.top;
+      }
+    }, {passive: false});
+    
+    guide.addEventListener('touchmove', (e) => {
+      if(e.touches.length === 2){
+        e.preventDefault();
+        const dy = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
+        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const viewRect = $('#camView').getBoundingClientRect();
+        const relativeCenter = ((centerY - viewRect.top) / viewRect.height) * 100;
+        
+        /* Yükseklik değişimi */
+        const heightChange = ((dy - this.cropArea.startDist) / viewRect.height) * 100;
+        let newHeight = Math.max(8, Math.min(60, this.cropArea.startHeight - heightChange));
+        
+        /* Merkez sabit kalsın diye top'u ayarla */
+        let newTop = relativeCenter - (newHeight / 2);
+        newTop = Math.max(5, Math.min(85 - newHeight, newTop));
+        
+        this.cropArea.height = newHeight;
+        this.cropArea.top = newTop;
+        this.updateCropUI();
+      }
+    }, {passive: false});
+    
+    guide.addEventListener('touchend', () => {
+      guide.classList.remove('adjusting');
+      this.cropArea.lastHeight = this.cropArea.height;
+      /* Dar alan tercih edilirse öğüt ver */
+      if(this.cropArea.height < 20){
+        guide.classList.add('narrow');
+        setTimeout(() => guide.classList.remove('narrow'), 3000);
+      }
+    });
+  },
+  
+  updateCropUI(){
+    const guide = $('#camView .cam-guide');
+    if(!guide) return;
+    guide.style.top = this.cropArea.top + '%';
+    guide.style.height = this.cropArea.height + '%';
+  },
+  
+  /* Okuma sırasında sadece ayarlanan alanı kullan */
+  getCropRect(imgWidth, imgHeight){
+    const topPx = (this.cropArea.top / 100) * imgHeight;
+    const heightPx = (this.cropArea.height / 100) * imgHeight;
+    return [0, Math.round(topPx), imgWidth, Math.round(heightPx)];
+  },
 
   async open(ctx){
     let c = ctx || { mode:this.ctxMode };
@@ -2646,6 +2782,7 @@ const Cam = {
     document.body.classList.add('cam-on');
     $('#camSheet').classList.add('show');
     $('#camTitle').textContent = c.mode==='scan' ? 'Plaka Okut' : 'Plakayı Okut';
+    this.setupCropArea();
     await this.start();
   },
   reset(){
@@ -2679,18 +2816,52 @@ const Cam = {
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
       this.ph('<b>Kamera erişimi yok.</b><br>Tarayıcı bu sayfada kamerayı açmıyor. Dosya olarak açılan uygulamalarda bu sınırlıdır — uygulamayı bir <b>https</b> adresinden açın ya da aşağıdaki düğmeleri kullanın.');
       this.status('Kamera kullanılamıyor', true);
-      $('#camShot').disabled=true; $('#camSwitch').disabled=true;
+      $('#camShot').disabled=true; $('#camSwitch').disabled=true; $('#camFocus').disabled=true;
       return;
     }
     this.status('Kamera açılıyor…');
     this.ph('Kamera açılıyor…');
     try{
       this.stream=await navigator.mediaDevices.getUserMedia({
-        video:{ facingMode:{ ideal:this.facing }, width:{ideal:1920}, height:{ideal:1080} }, audio:false });
+        video:{ facingMode:{ ideal:this.facing }, width:{ideal:1920}, height:{ideal:1080}, 
+                focusMode:{ ideal:'continuous' }, advanced:[{ focusMode:'continuous' }] }, audio:false });
       const v=$('#camVideo'); v.srcObject=this.stream; v.style.display='block'; $('#camPh').style.display='none';
+      
+      /* Video tıklamayla odaklanma özelliği */
+      v.onclick = async (e) => {
+        const track = this.stream?.getVideoTracks()?.[0];
+        if(!track) return;
+        
+        const rect = v.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        
+        try{
+          const cap = track.getCapabilities?.();
+          if(cap?.focusMode?.includes('manual')){
+            await track.applyConstraints({ 
+              advanced: [{ focusMode: 'manual', focusDistance: 0.5 }] 
+            });
+            setTimeout(async () => {
+              try{
+                await track.applyConstraints({ 
+                  advanced: [{ focusMode: 'continuous' }] 
+                });
+              }catch(e){}
+            }, 300);
+            const flash = document.createElement('div');
+            flash.style.cssText = `position:absolute;left:${e.clientX-rect.left-25}px;top:${e.clientY-rect.top-25}px;width:50px;height:50px;border:2px solid var(--amber);border-radius:50%;pointer-events:none;animation:focusRing .5s ease-out`;
+            v.parentElement.appendChild(flash);
+            setTimeout(() => flash.remove(), 500);
+          }
+        }catch(err){
+          console.log('Odak ayarı desteklenmiyor:', err);
+        }
+      };
+      
       try{ await v.play(); }catch(e){}
-      $('#camShot').disabled=false; $('#camSwitch').disabled=false;
-      this.status('Plakayı çerçeveye alın');
+      $('#camShot').disabled=false; $('#camSwitch').disabled=false; $('#camFocus').disabled=false;
+      this.status('Plakayı çerçeveye alın — 2 parmakla çerçeveyi ayarlayın, odak için ekrana dokunun');
       if(P.autoCam) this.autoT=setTimeout(()=>{ if(this.stream) this.shoot(); }, 1500);
     }catch(e){
       const why = (e&&e.name==='NotAllowedError') ? 'Kamera izni verilmedi.'
@@ -2725,6 +2896,11 @@ const Cam = {
     raw.getContext('2d').drawImage(v,0,0,raw.width,raw.height);
     sfx.shutter(); buzz(20);
     this.flash();
+    
+    /* Kullanıcının ayarladığı dar alanı göster */
+    const cropRect = this.getCropRect(raw.width, raw.height);
+    this.userCropRect = cropRect;
+    
     await this.read(raw);
   },
   flash(){
@@ -2746,60 +2922,74 @@ const Cam = {
       this.quality=q;
       if(q && q.mean<52) this.status('Görüntü karanlık — plakayı aydınlatın');
       else if(q && q.sharp<11) this.status('Görüntü bulanık — telefonu sabit tutun');
-      regions=findPlateRegions(raw);
+      
+      /* GÜÇLÜ OKUMA STRATEJİSİ */
+      if(this.userCropRect && this.cropArea.height < 35){
+        this.status('Seçili dar alan taranıyor — maksimum doğruluk…');
+        regions = [{ rect: this.userCropRect, light: true, fit: 100, angle: 0, fromUser: true }];
+      } else {
+        regions=findPlateRegions(raw);
+      }
       const rects=[];
-      /* Deneme listesi düz ve sıralıdır: önce HIZLI ve genelde doğru olan
-         bölge kırpmaları, sonra güvenli ama pahalı olan tam kare.
-         Nöbetçiyi bekletmemek için erken çıkış koşulu her denemede kontrol
-         edilir (aşağıda): iki bağımsız deneme aynı plakayı verirse daha
-         pahalı denemelere hiç geçilmez. */
-      const AT=[ {mode:'otsu',psm:'7'},    {mode:'stretch',psm:'6'} ];
-      const AS=[ {mode:'sharp',psm:'7'} ];
-      const AO=[ {mode:'otsu',psm:'13'} ];
-      if(regions.length){
-        /* Kırpma kaynağı: bölgenin dolgulu kutusu (rg.rect) kullanılır, ama
-           en-boy oranından hesaplanan YÜKSEKLİK uygulanmış hali alınır; bölge
-           bulucu bandı kestiğinde plaka dikeyde eksik kalıyordu. */
+      
+      /* ÇOK KATMANLI OKUMA MOTİFLERİ - En güçlüden en güvenilire */
+      const STRONG=[ {mode:'otsu',psm:'7'}, {mode:'sharp',psm:'7'}, {mode:'stretch',psm:'6'} ];
+      const ROBUST=[ {mode:'otsu',psm:'6'}, {mode:'sharp',psm:'6'} ];
+      const FALLBACK=[ {mode:'otsu',psm:'13'}, {mode:'stretch',psm:'13'} ];
+      
+      if(regions.length && regions[0].fromUser){
+        /* Kullanıcı dar alan = en agresif okuma */
+        const bx = [{ tam: regions[0].rect, tam2: regions[0].rect, ang: 0 }];
+        rects.push({ r:bx[0].tam, a:0, tag:'user-precise', att:STRONG });
+        rects.push({ r:bx[0].tam, a:0, tag:'user-robust', att:ROBUST });
+      } else if(regions.length){
+        /* GÜÇLÜ BÖLGE ÇıKARMA - Akıllı kırpma + TR şeridi temizleme */
         const bx=[];
-        regions.forEach((rg)=>{
+        regions.slice(0,5).forEach((rg)=>{
           const b=rg.rect.slice();
           const wantH=b[2]/4.72, cy=b[1]+b[3]/2;
-          if(wantH>b[3]*0.9){
-            const nh=Math.min(wantH*1.5, raw.height);
+          if(wantH>b[3]*0.85){
+            const nh=Math.min(wantH*1.6, raw.height);
             b[1]=Math.max(0, Math.round(cy-nh/2));
             b[3]=Math.min(raw.height-b[1], Math.round(nh));
           }
-          const qx=b[2]*0.05;
-          b[0]=Math.max(0, Math.round(b[0]-qx));
-          b[2]=Math.min(raw.width-b[0], Math.round(b[2]+qx*2));
-          /* Türk plakasının solundaki mavi "TR" şeridini at — okuma bozulmasının
-             en sık nedeni budur. DİKKAT: sağ kenar KORUNMALIDIR. Şerit solda
-             olduğu için genişlikten yalnızca şeridin kendisi düşülür; fazlası
-             düşülürse plakanın son hanesi kırpılır ve okuma "06 TY 445" gibi
-             eksik çıkıyordu. Sağ kenarda bir pay bırakılır. */
-          const tw=b[2]*0.10;
-          bx.push({ tam:[Math.round(b[0]+tw), b[1], Math.round(b[2]-tw*0.94), b[3]],
-            tam2:b, ang:rg.angle||0 });
+          const padX=b[2]*0.06, padY=b[3]*0.08;
+          b[0]=Math.max(0, Math.round(b[0]-padX));
+          b[2]=Math.min(raw.width-b[0], Math.round(b[2]+padX*2));
+          b[1]=Math.max(0, Math.round(b[1]-padY));
+          b[3]=Math.min(raw.height-b[1], Math.round(b[3]+padY*2));
+          
+          /* TR şeridi temizleme - sol %12 kırp, sağ koru */
+          const tw=b[2]*0.12;
+          bx.push({ 
+            clean:[Math.round(b[0]+tw), b[1], Math.round(b[2]-tw*0.96), b[3]],
+            full:b, 
+            ang:rg.angle||0,
+            quality:rg.fit||0
+          });
         });
-        rects.push({ r:bx[0].tam,  a:bx[0].ang, tag:'plaka',     att:AT });
-        /* Bölge dedektörü pencere/tabela/başka aracı gösterebilir; bu durumda
-           tüm bölge denemeleri boşa gider. Tam kare TEK denemede bütün kareyi
-           okur ve yanlış bölge seçimini kurtarır. */
-        rects.push({ r:[0,0,raw.width,raw.height], a:0, tag:'tam-kare', att:AS });
-        rects.push({ r:bx[0].tam2, a:bx[0].ang, tag:'tam-bolge',  att:AT });
-        rects.push({ r:bx[0].tam,  a:bx[0].ang, tag:'plaka-keskin', att:AS });
-        rects.push({ r:bx[0].tam,  a:bx[0].ang, tag:'plaka-harf', att:AO });
-        for(let i=1;i<bx.length;i++){
-          rects.push({ r:bx[i].tam,  a:bx[i].ang, tag:'plaka'+(i+1),      att:AT });
-          rects.push({ r:bx[i].tam2, a:bx[i].ang, tag:'tam-bolge'+(i+1), att:AS });
+        
+        /* EN İYİDEN BAŞLAYARAK KATMANLI OKUMA */
+        if(bx.length>0){
+          rects.push({ r:bx[0].clean, a:bx[0].ang, tag:'top-clean', att:STRONG });
+          rects.push({ r:bx[0].full,  a:bx[0].ang, tag:'top-full',  att:ROBUST });
+          rects.push({ r:[0,0,raw.width,raw.height], a:0, tag:'fullframe', att:ROBUST });
+          
+          if(bx.length>1){
+            rects.push({ r:bx[1].clean, a:bx[1].ang, tag:'alt-clean', att:STRONG });
+          }
+          if(bx.length>2){
+            rects.push({ r:bx[2].clean, a:bx[2].ang, tag:'alt2-clean', att:ROBUST });
+          }
+          
+          rects.push({ r:band(raw,0.32,0.24), a:0, tag:'band-mid', att:STRONG });
+          rects.push({ r:band(raw,0.25,0.45), a:0, tag:'band-wide', att:FALLBACK });
         }
-        rects.push({ r:band(raw,0.30,0.20), a:0, tag:'cerceve', att:AT });
-      }
-      else {
-        rects.push({ r:band(raw,0.30,0.40), a:0, tag:'cerceve', att:AT.concat(AS) });
-        rects.push({ r:band(raw,0.22,0.56), a:0, tag:'genis',    att:AT });
-        rects.push({ r:[0,0,raw.width,raw.height], a:0, tag:'tam-kare', att:AS });
-        rects.push({ r:band(raw,0.10,0.80), a:0, tag:'genis2',   att:AO });
+      } else {
+        /* Bölge bulunamadı - tam tarama */
+        rects.push({ r:band(raw,0.30,0.38), a:0, tag:'center', att:STRONG });
+        rects.push({ r:[0,0,raw.width,raw.height], a:0, tag:'full', att:ROBUST });
+        rects.push({ r:band(raw,0.20,0.55), a:0, tag:'wide', att:FALLBACK });
       }
       const w=await this.worker(p=>this.prog(10+p*72));
       let done=0, lastErr=null;
@@ -2809,11 +2999,19 @@ const Cam = {
       const deadline=Date.now()+9000;
       const votes={};                    /* plaka -> kaç bağımsız denemede çıktı */
       const outOfTime=()=> Date.now()>deadline && cands.length>0;
-      /* Tesseract'ın DPI tahmini kırpılmış plakada genelde yanlış çıkar ve
-         karakter yüksekliğini yanlış ölçeklendirir. 300 dpi sabitlemek
-         kırpılmış plaka okumasında en büyük tek doğruluk artışıdır. */
-      const BASE_PARAMS={ tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-        preserve_interword_spaces:'1', user_defined_dpi:'300' };
+      /* GÜÇLÜ OKUMA PARAMETRELERİ
+         - DPI: 320 (300'den daha keskin)
+         - Whitelist: Sadece plaka karakterleri
+         - Preserve spaces: Harf gruplarını ayır
+         - Load system dawg: false (gereksiz kelime kontrolü yok) */
+      const BASE_PARAMS={ 
+        tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        preserve_interword_spaces:'1', 
+        user_defined_dpi:'320',
+        load_system_dawg:'0',
+        load_freq_dawg:'0',
+        tessedit_enable_dict_correction:'0'
+      };
       for(const item of rects){
         if(outOfTime()) break;
         for(const at of item.att){
@@ -3165,26 +3363,74 @@ function renderLog(){
       + '</div>';
     return;
   }
+  
   let last=''; box.innerHTML='';
-  list.slice(0,400).forEach(v=>{
-    const k=dayKey(v.ts);
-    if(k!==last){ last=k;
-      const d=document.createElement('div'); d.className='date-sep';
-      d.textContent = k===dayKey(Date.now()) ? 'Bugün' : new Date(v.ts).toLocaleDateString('tr-TR',{day:'2-digit',month:'long',weekday:'long'});
-      box.appendChild(d); }
-    const el=document.createElement('div'); el.className='log-item';
-    el.innerHTML='<div class="l-main"><div class="l-addr">'+esc(v.site)+' · '+esc(v.unit)+'</div>'
-      +'<div class="l-meta"><span>'+esc(v.courier||'—')+'</span>'+(v.plate?'<span class="plate-sm">'+esc(v.plate)+'</span>':'')
-      +(v.company?'<span class="firm-tag">'+esc(v.company)+'</span>':'')
-      +'<span class="pill">'+esc(v.guard||'—')+'</span></div></div>'
-      +'<div class="l-right"><div class="l-time">'+fmtTR(v.ts)+'</div>'
-      +'<div class="icon-mini" data-a="say" title="Sesli oku"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg></div></div>';
-    el.onclick=e=>{
-      const a=e.target.closest('[data-a]');
-      if(a && a.dataset.a==='say'){ sfx.tap(); speak(v.site+' '+v.unit+', kurye '+(v.courier||'')+(v.plate?', plaka '+v.plate:'')); return; }
-      openEntry(v);
+  
+  /* Binaya göre gruplandır */
+  const byBuilding = {};
+  list.forEach(v => {
+    const key = v.site;
+    if(!byBuilding[key]) byBuilding[key] = [];
+    byBuilding[key].push(v);
+  });
+  
+  Object.keys(byBuilding).forEach(building => {
+    const buildingVisits = byBuilding[building];
+    const latestVisit = buildingVisits[0];
+    
+    /* Bina başlığı - emoji yok */
+    const buildingHeader = document.createElement('div');
+    buildingHeader.className = 'log-item';
+    buildingHeader.style.background = 'var(--panel2)';
+    buildingHeader.style.borderColor = 'var(--amber)';
+    buildingHeader.style.cursor = 'pointer';
+    buildingHeader.innerHTML = 
+      '<div class="l-main">' +
+      '<div class="l-addr"><b>'+esc(building)+'</b></div>' +
+      '<div class="l-meta">' +
+      '<span>Bugün '+buildingVisits.length+' giriş</span>' +
+      '<span class="pill">Son: '+fmtTR(latestVisit.ts)+'</span>' +
+      '</div></div>' +
+      '<div class="l-right">' +
+      '<button class="icon-mini" style="background:var(--amber-dim);border-color:var(--amber);color:var(--amber)" title="Detayları göster">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>' +
+      '</button>' +
+      '</div>';
+    
+    const detailsList = document.createElement('div');
+    detailsList.style.display = 'none';
+    detailsList.style.paddingLeft = '0px';
+    detailsList.style.marginTop = '0px';
+    detailsList.style.marginBottom = '8px';
+    
+    buildingVisits.slice(0,400).forEach(v=>{
+      const el=document.createElement('div'); 
+      el.className='log-item';
+      el.style.marginTop = '6px';
+      el.innerHTML='<div class="l-main"><div class="l-addr">'+esc(v.site)+' · '+esc(v.unit)+'</div>'
+        +'<div class="l-meta"><span>'+esc(v.courier||'—')+'</span>'+(v.plate?'<span class="plate-sm">'+esc(v.plate)+'</span>':'')
+        +(v.company?'<span class="firm-tag">'+esc(v.company)+'</span>':'')
+        +'<span class="pill">'+esc(v.guard||'—')+'</span></div></div>'
+        +'<div class="l-right"><div class="l-time">'+fmtTR(v.ts)+'</div>'
+        +'<div class="icon-mini" data-a="say" title="Sesli oku"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg></div></div>';
+      el.onclick=e=>{
+        const a=e.target.closest('[data-a]');
+        if(a && a.dataset.a==='say'){ sfx.tap(); speak(v.site+' '+v.unit+', kurye '+(v.courier||'')+(v.plate?', plaka '+v.plate:'')); return; }
+        openEntry(v);
+      };
+      detailsList.appendChild(el);
+    });
+    
+    buildingHeader.onclick = (e) => {
+      e.stopPropagation();
+      const isOpen = detailsList.style.display === 'block';
+      detailsList.style.display = isOpen ? 'none' : 'block';
+      const icon = buildingHeader.querySelector('svg');
+      if(icon) icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
     };
-    box.appendChild(el);
+    
+    box.appendChild(buildingHeader);
+    box.appendChild(detailsList);
   });
 }
 $('#logSearch').addEventListener('input', renderLog);
@@ -3364,9 +3610,61 @@ function reportText(list, title){
 $('#exportWa').onclick=()=>{
   const list=filteredLog();
   if(!list.length){ toast('Paylaşılacak kayıt yok','err'); return; }
-  const text=reportText(list.slice(0,60));
-  openShare('WhatsApp raporu', text, new Blob([text],{type:'text/plain;charset=utf-8'}), 'cinarkoy-rapor-'+fileStamp()+'.txt');
+  /* Her kaydı teker teker göndermek için onay */
+  openActions('WhatsApp raporu hazır',
+    list.length+' kayıt. Tümünü tek mesajda mı yoksa teker teker mi göndermek istersiniz?',
+    [
+      { ico:ic('send',17), t:'Tek mesajda gönder', s:'Tüm kayıtları tek mesajda paylaş', primary:true,
+        run:()=>{ 
+          const text=reportText(list.slice(0,60));
+          openShare('WhatsApp raporu', text, new Blob([text],{type:'text/plain;charset=utf-8'}), 'cinarkoy-rapor-'+fileStamp()+'.txt');
+        } 
+      },
+      { ico:ic('repeat',17), t:'Teker teker gönder', s:'Her kaydı ayrı ayrı WhatsApp ile paylaş',
+        run:()=>{ sendVisitsOneByOne(list); } 
+      }
+    ]);
 };
+
+/* Her kaydı teker teker WhatsApp ile gönder */
+function sendVisitsOneByOne(list){
+  let currentIndex = 0;
+  
+  function sendNext(){
+    if(currentIndex >= list.length){
+      toast('Tüm kayıtlar gönderildi','ok');
+      return;
+    }
+    
+    const v = list[currentIndex];
+    const text = `${v.site} · ${v.unit}\n${v.courier||'—'}\n` +
+                 (v.plate ? `${v.plate}\n` : '') +
+                 (v.company||firmOf(v.plate,v.courier) ? `${v.company||firmOf(v.plate,v.courier)}\n` : '') +
+                 `${fmtTR(v.ts,true)}\n` +
+                 `Görevli: ${v.guard||'—'}`;
+    
+    const url = waLink(text);
+    const w = window.open(url,'_blank');
+    
+    currentIndex++;
+    
+    /* Sonraki kayıt için onay sor */
+    if(currentIndex < list.length){
+      setTimeout(()=>{
+        ask('Bir sonraki kayıt gönderilsin mi?', 
+            `${currentIndex}/${list.length} gönderildi. Devam edilsin mi?`,
+            'Evet').then(ok => {
+          if(ok) sendNext();
+          else toast('Gönderim durduruldu','ok');
+        });
+      }, 1000);
+    } else {
+      toast('Tüm kayıtlar gönderildi','ok');
+    }
+  }
+  
+  sendNext();
+}
 $('#exportJson').onclick=async ()=>{
   const pkg=await buildPackage('full');
   downloadBlob(new Blob([JSON.stringify(pkg)],{type:'application/json'}), 'cinarkoy-veri-'+fileStamp()+'.json');
