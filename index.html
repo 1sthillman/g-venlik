@@ -2331,6 +2331,12 @@ function plateCandidates(text, conf){
     out.push({ plate:pl, score:s, courier:c||null });
   };
   let raw=String(text||'').toUpperCase().replace(/[^0-9A-Z]/g,'');
+  
+  /* KRİTİK VALIDASYON: Minimum karakter sayısı kontrolü */
+  if(raw.length < 6){
+    return []; // Çok kısa - plaka olamaz
+  }
+  
   /* plakanın soluna/altına bulaşan gereksiz harfleri at (ör. "S5AB1234", "TR55AB1234") */
   const trimmed=raw.replace(/^[^0-9]{1,3}(?=\d{2}[A-Z])/,'');
   if(trimmed && trimmed!==raw) raw=trimmed;
@@ -2364,13 +2370,20 @@ function plateCandidates(text, conf){
       if(qk.length>k.length && qk.indexOf(k)===0){ o.score-=5; break; }
     }
   });
-  /* Tesseract'ın güven puanı kırpılmış plakada kararsızdır: bazen doğru
-     okuma 0, bazen eksik okuma 95 geliyor. Bu yüzden ağırlığı çok düşük
-     tutulur (yalnızca eşitlik bozucu). */
+  
+  /* KRİTİK: Confidence bazlı filtreleme - düşük confidence'ları ağır cezalandır */
   const c=conf||70;
-  out.forEach(o=>{ o.score += Math.max(-2, Math.min(2, (c-70)/25)); o.score=Math.round(o.score*10)/10; });
-  out.sort((a,b)=>b.score-a.score);
-  return out;
+  const confPenalty = c < 50 ? -15 : (c < 65 ? -8 : 0);
+  out.forEach(o=>{ 
+    o.score += Math.max(-2, Math.min(2, (c-70)/25)); 
+    o.score += confPenalty;
+    o.score=Math.round(o.score*10)/10; 
+  });
+  
+  /* KRİTİK FILTRELEME: Çok düşük skorları tamamen reddet */
+  const filtered = out.filter(o => o.score >= -5);
+  filtered.sort((a,b)=>b.score-a.score);
+  return filtered;
 }
 
 /* --- Plaka bölgesi bulma ------------------------------------------------
@@ -3098,7 +3111,23 @@ const Cam = {
 
   /* ---- sonucu göster ve kullanıcıya doğrulat --- */
   deliver(cands, texts, regions){
+    /* KRİTİK VALIDASYON: Eğer en iyi aday bile çok düşük skorluysa REDDET */
     const best=bestCandidate(cands);
+    
+    /* GÜÇLÜ FALSE POSITIVE KONTROLÜ */
+    if(!best || best.score < 0){
+      this.say('Plaka okunamadı');
+      this.status('Görüntüde plaka bulunamadı - tekrar deneyin veya elle girin', true);
+      sfx.err();
+      return;
+    }
+    
+    /* Orta derecede zayıf okuma - uyar ama göster */
+    if(best.score < 8){
+      this.say('Düşük güven: ' + Math.round(best.score) + ' puan');
+      this.status('Okuma belirsiz - lütfen plakayı kontrol edin!', true);
+    }
+    
     const courier = best ? (best.courier||matchPlate(best.plate)||null) : null;
     /* Son bir tutarlılık kontrolü: kurye eşleştiyse gösterilen plaka onunki olsun */
     if(best && courier && courier.plate) best.plate=courier.plate;
@@ -3135,6 +3164,7 @@ const Cam = {
       n.classList.toggle('dim',!courier);
       if(courier) this.status('Listede bulundu');
       else if(bs>=18) this.status('Okundu — kurye listesinde yok');
+      else if(bs>=8) this.status('Okuma başarılı - plakayı kontrol edin');
       else this.status('Zayıf okuma — kontrol edin', true);
       this.say(courier? ('Plaka <b>'+best.plate+'</b> · '+courier.name)
         : ('Plaka <b>'+best.plate+'</b> okundu. '+(bs>=18?'Bu plaka listede yok, kullanırsanız kurye adıyla eşleştirilir.':'Okuma zayıf, elle düzeltmeniz önerilir.')));
