@@ -1899,35 +1899,50 @@ function paintUnitHistory(){
   $('#usCourier').textContent=list.length?(list[0].courier||'—'):'—';
   const h=$('#unitHistory'); h.innerHTML='';
   
-  /* Eğer 3'ten fazla giriş varsa carousel yap */
-  if(list.length > 3){
-    h.classList.add('carousel');
-  } else {
-    h.classList.remove('carousel');
-  }
+function paintUnitHistory(){
+  if(!currentUnit) return;
+  const list=VISITS.filter(v=>v.site===currentUnit.site.name && v.unit===currentUnit.code);
+  $('#usTotal').textContent=list.length;
+  $('#usLast').textContent=list.length?fmtTR(list[0].ts):'—';
+  $('#usCourier').textContent=list.length?(list[0].courier||'—'):'—';
+  const h=$('#unitHistory'); 
+  if(!h){ console.error('unitHistory element bulunamadı!'); return; }
+  h.innerHTML='';
+  h.className='mini-list'; // Reset
   
   if(!list.length){ 
-    h.classList.remove('carousel');
-    h.innerHTML='<div class="ml"><span>Bu daireye daha önce kayıt yapılmamış</span></div>'; 
+    h.innerHTML='<div class="ml" style="min-width:100%;max-width:100%"><span>Bu daireye daha önce kayıt yapılmamış</span></div>'; 
     return; 
   }
   
-  /* En fazla 15 giriş göster */
+  /* 3'ten fazla giriş varsa carousel - ZORUNLU */
+  if(list.length > 3){
+    h.className='mini-list carousel';
+    console.log('✅ Carousel AKTIF:', list.length, 'giriş');
+  } else {
+    console.log('ℹ️ Normal liste:', list.length, 'giriş');
+  }
+  
+  /* En fazla 15 giriş */
   list.slice(0,15).forEach(v=>{ 
     const d=document.createElement('div'); 
     d.className='ml';
     const co=v.company||firmOf(v.plate,v.courier);
     
-    /* Kart içeriği - dikey düzende */
-    let content = '<div style="font-weight:600;font-size:13.5px;margin-bottom:4px">'+esc(v.courier||'—')+'</div>';
-    if(v.plate) content += '<div style="margin-bottom:4px"><span class="plate-sm">'+esc(v.plate)+'</span></div>';
-    if(co) content += '<div style="font-size:10.5px;color:var(--cyan);margin-bottom:4px">'+esc(co)+'</div>';
-    content += '<div style="font-size:11px;color:var(--muted)">'+fmtTR(v.ts,true)+'</div>';
-    content += '<div style="font-size:10.5px;color:var(--muted);margin-top:2px">Nöbetçi: '+esc(v.guard||'—')+'</div>';
+    let html = '<div style="display:flex;flex-direction:column;gap:4px">';
+    html += '<div style="font-weight:600;font-size:13.5px">'+esc(v.courier||'—')+'</div>';
+    if(v.plate) html += '<div><span class="plate-sm">'+esc(v.plate)+'</span></div>';
+    if(co) html += '<div style="font-size:10.5px;color:var(--cyan)">'+esc(co)+'</div>';
+    html += '<div style="font-size:11px;color:var(--muted)">'+fmtTR(v.ts,true)+'</div>';
+    html += '<div style="font-size:10.5px;color:var(--muted)">'+esc(v.guard||'—')+'</div>';
+    html += '</div>';
     
-    d.innerHTML = content;
+    d.innerHTML = html;
     h.appendChild(d); 
   });
+  
+  console.log('🎨 Render tamamlandı. Class:', h.className, 'Children:', h.children.length);
+}
 }
 function mapsUrl(site, code){
   if(site.lat&&site.lng) return 'https://www.google.com/maps?q='+site.lat+','+site.lng;
