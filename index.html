@@ -257,19 +257,19 @@ body.cam-on{ overflow:hidden; }
 
 .cam-glass{
   -webkit-appearance:none; appearance:none; border:0; margin:0; cursor:pointer;
-  width:44px; height:44px; flex:0 0 44px; border-radius:14px;
-  background:rgba(18,26,25,.55); color:#fff;
-  border:1px solid rgba(255,255,255,.16);
-  backdrop-filter:blur(14px) saturate(1.3); -webkit-backdrop-filter:blur(14px) saturate(1.3);
+  width:48px; height:48px; flex:0 0 48px; border-radius:15px;
+  background:rgba(18,26,25,.65); color:#fff;
+  border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4);
   display:flex; align-items:center; justify-content:center;
-  box-shadow:0 6px 20px -8px rgba(0,0,0,.8);
-  transition:transform .12s, background .16s, border-color .16s;
+  box-shadow:0 4px 16px -6px rgba(0,0,0,.7);
+  transition:transform .14s, background .18s, border-color .18s;
 }
-.cam-glass:active{ transform:scale(.9); background:rgba(255,169,77,.28); border-color:rgba(255,169,77,.6); }
-.cam-glass svg{ width:20px; height:20px; }
-.cam-glass.sm{ width:38px; height:38px; flex:0 0 38px; border-radius:12px; }
-.cam-glass.sm svg{ width:17px; height:17px; }
-.cam-glass.on{ background:rgba(255,169,77,.3); border-color:var(--amber); color:var(--amber); }
+.cam-glass:active{ transform:scale(.92); background:rgba(255,169,77,.32); border-color:rgba(255,169,77,.65); }
+.cam-glass svg{ width:22px; height:22px; }
+.cam-glass.sm{ width:40px; height:40px; flex:0 0 40px; border-radius:13px; }
+.cam-glass.sm svg{ width:18px; height:18px; }
+.cam-glass.on{ background:rgba(255,169,77,.35); border-color:var(--amber); color:var(--amber); }
 .cam-glass[hidden]{ display:none; }
 
 /* görüntü alanı */
@@ -384,25 +384,26 @@ body.cam-on{ overflow:hidden; }
   display:flex; align-items:center; justify-content:space-between; gap:10px;
   flex-shrink:0; padding:14px 4px 0;
 }
-.cam-side{ display:flex; flex-direction:column; align-items:center; gap:4px; width:66px; flex:0 0 66px;
-  background:none; border:0; padding:0; color:rgba(255,255,255,.72); cursor:pointer;
-  font-size:10.5px; letter-spacing:.02em; -webkit-appearance:none; appearance:none; }
+.cam-side{ display:flex; flex-direction:column; align-items:center; gap:6px; width:70px; flex:0 0 70px;
+  background:none; border:0; padding:0; color:rgba(255,255,255,.8); cursor:pointer;
+  font-size:11px; letter-spacing:.02em; font-weight:600; -webkit-appearance:none; appearance:none; }
 .cam-side span{ display:block; }
-.cam-side .cam-glass{ width:46px; height:46px; flex:0 0 46px; border-radius:15px; }
+.cam-side .cam-glass{ width:52px; height:52px; flex:0 0 52px; border-radius:16px; }
+.cam-side .cam-glass svg{ width:22px; height:22px; }
 .cam-side[disabled]{ opacity:.3; pointer-events:none; }
-.cam-side:active .cam-glass{ transform:scale(.9); }
+.cam-side:active .cam-glass{ transform:scale(.92); }
 
 .shutter{
   -webkit-appearance:none; appearance:none; border:0; margin:0; padding:0; cursor:pointer; background:none;
-  width:78px; height:78px; flex:0 0 78px; border-radius:50%;
+  width:82px; height:82px; flex:0 0 82px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  background:conic-gradient(from 210deg,#fff,#cfe9e4,#fff);
-  box-shadow:0 0 0 3px rgba(255,255,255,.14), 0 10px 26px -10px rgba(0,0,0,.9);
-  transition:transform .12s;
+  background:conic-gradient(from 210deg,#fff,#d9ece8,#fff);
+  box-shadow:0 0 0 4px rgba(255,255,255,.16), 0 8px 24px -8px rgba(0,0,0,.85);
+  transition:transform .14s;
 }
-.shutter i{ display:block; width:64px; height:64px; border-radius:50%; background:#0b1110;
-  box-shadow:inset 0 1px 3px rgba(255,255,255,.22); transition:transform .1s, background .15s, opacity .2s; }
-.shutter:active i{ transform:scale(.82); }
+.shutter i{ display:block; width:68px; height:68px; border-radius:50%; background:#0b1110;
+  box-shadow:inset 0 1px 4px rgba(255,255,255,.24); transition:transform .12s, background .16s, opacity .2s; }
+.shutter:active i{ transform:scale(.84); }
 .shutter[disabled]{ opacity:.45; pointer-events:none; filter:grayscale(0.5); }
 .shutter[disabled] i{ background:rgba(11,17,16,0.6); }
 #camSheet.scanning .shutter i{ background:var(--amber-dim); animation:shutterPulse 1.2s ease-in-out infinite; }
@@ -1305,12 +1306,12 @@ body.cam-on{ overflow:hidden; }
 <!-- ===== kamera / plaka okutucu ===== -->
 <div id="camSheet">
   <div class="cam-top">
-    <button class="cam-glass" id="camClose" type="button" title="Kapat" aria-label="Kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <button class="cam-glass" id="camClose" type="button" title="Kapat" aria-label="Kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     <div class="cam-title">
       <div class="t" id="camTitle">Plaka Okut</div>
       <div class="s" id="camSub">Kamera hazırlanıyor…</div>
     </div>
-    <button class="cam-glass" id="camGallery" type="button" title="Galeriden seç" aria-label="Galeriden seç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.8" cy="9" r="1.7"/><path d="m3.5 17 4.6-4.4a2 2 0 0 1 2.8 0L20 21"/></svg></button>
+    <button class="cam-glass" id="camGallery" type="button" title="Galeriden seç" aria-label="Galeriden seç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L9 18"/></svg></button>
   </div>
 
   <div class="cam-view" id="camView">
@@ -1345,24 +1346,18 @@ body.cam-on{ overflow:hidden; }
   <div class="cam-bar">
     <!-- Sol: Yaz butonu -->
     <button class="cam-side" id="camType" type="button">
-      <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
+      <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
       <span>Yaz</span>
     </button>
     
     <!-- Ortada: Fotoğraf çekme butonu -->
     <button class="shutter" id="camShot" type="button" title="Çek" aria-label="Çek"><i></i></button>
     
-    <!-- Sağda: Flaş ve Çevir yan yana -->
-    <div style="display:flex;gap:8px;align-items:center;">
-      <button class="cam-side" id="camTorch" type="button" style="display:none;">
-        <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v4M13 2v4M12 6L8 12h8L12 6zM8 12l2 10h4l2-10"/></svg></span>
-        <span id="camTorchLabel">Flaş</span>
-      </button>
-      <button class="cam-side" id="camSwitch" type="button">
-        <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/></svg></span>
-        <span>Çevir</span>
-      </button>
-    </div>
+    <!-- Sağda: Çevir butonu -->
+    <button class="cam-side" id="camSwitch" type="button">
+      <span class="cam-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></span>
+      <span>Çevir</span>
+    </button>
   </div>
 </div>
 <input type="file" id="camFile" accept="image/*" style="display:none">
