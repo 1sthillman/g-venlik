@@ -3491,7 +3491,7 @@ const Cam = {
       if(switchBtn) switchBtn.disabled = false;
       if(focusBtn) focusBtn.disabled = false;
       this.status('TEK PARMAK: Çerçeveyi taşı · İKİ PARMAK: Boyutlandır · DOKUN: Odaklan');
-      if(P.autoCam) this.autoT=setTimeout(()=>{ if(this.stream) this.shoot(); }, 1500);
+      /* Otomatik okuma KALDIRILDI - Sadece butona basınca okusun */
     }catch(e){
       console.error('Kamera hatası:', e);
       const why = (e && e.name === 'NotAllowedError') ? 'Kamera izni verilmedi.'
@@ -3758,11 +3758,18 @@ const Cam = {
       
       console.log(`Seçilen: "${chosen}" (${confidence}, ${bestCount} oy)`);
       
+      /* Debug: Seçilen metni kontrol et */
+      if(chosen){
+        console.log(`plateCandidates çağrılıyor: "${chosen}", score: ${confidence === 'high' ? 80 : 40}`);
+      }
+      
       this.prog(100);
       
       /* Sonuçları işle */
       const texts = results.map(r => r.text).filter(Boolean);
       const cands = chosen ? plateCandidates(chosen, confidence === 'high' ? 80 : 40) : [];
+      
+      console.log(`plateCandidates sonucu: ${cands.length} aday`, cands);
       
       this.rawText = texts.join(' ');
       
