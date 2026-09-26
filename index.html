@@ -3585,7 +3585,7 @@ const Cam = {
     $('#camShot').style.opacity = '0.5';
     
     try {
-      /* HIZLI TEK KARE YAKALAMA - Burst mode kaldırıldı */
+      /* HIZLI TEK KARE YAKALAMA */
       this.status('Fotoğraf çekiliyor...');
       
       const canvas = document.createElement('canvas');
@@ -3600,17 +3600,36 @@ const Cam = {
       ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
       console.log(`Kare yakalandı: ${canvas.width}x${canvas.height}`);
       
+      /* KULLANICI CROP ALANI - Sadece plaka bölgesini al */
+      const cropRect = this.getCropRect(canvas.width, canvas.height);
+      let finalCanvas = canvas;
+      
+      if(cropRect && cropRect[2] > 0 && cropRect[3] > 0){
+        /* Crop alanını kırp */
+        const cropped = document.createElement('canvas');
+        const targetW = 480; // Sabit genişlik
+        const scale = targetW / cropRect[2];
+        cropped.width = targetW;
+        cropped.height = Math.round(cropRect[3] * scale);
+        const croppedCtx = cropped.getContext('2d');
+        
+        croppedCtx.drawImage(
+          canvas,
+          cropRect[0], cropRect[1], cropRect[2], cropRect[3],
+          0, 0, cropped.width, cropped.height
+        );
+        
+        finalCanvas = cropped;
+        console.log(`Kırpıldı: ${cropped.width}x${cropped.height}`);
+      }
+      
       /* Başarılı - Feedback */
       sfx.shutter(); 
       buzz(20);
       this.flash();
       
-      /* Kullanıcının ayarladığı dar alanı göster */
-      const cropRect = this.getCropRect(canvas.width, canvas.height);
-      this.userCropRect = cropRect;
-      
       /* Okuma işlemine geç */
-      await this.read(canvas);
+      await this.read(finalCanvas);
       
     } catch(error) {
       /* ==================== HATA YÖNETİMİ ==================== */
