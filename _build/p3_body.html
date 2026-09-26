@@ -46,11 +46,6 @@
     <section id="tab-map">
       <div class="map-hint" id="mapHint">Bir bloğa dokunun — gerçek yerleşim planı üzerinden.</div>      <div class="map-frame">
         <div class="map-badge">Canlı Plan</div>
-        <div class="map-zoom-bar">
-          <button id="mapZoomIn" type="button" title="Yakınlaştır" aria-label="Yakınlaştır">+</button>
-          <button id="mapZoomReset" type="button" title="Sıfırla" aria-label="Sıfırla">⊙</button>
-          <button id="mapZoomOut" type="button" title="Uzaklaştır" aria-label="Uzaklaştır">−</button>
-        </div>
         <img id="mapImg" alt="Çınarköy yerleşim planı" src="__MAP_IMG__">
         <svg id="hotspots" viewBox="0 0 900 1323" preserveAspectRatio="none"></svg>
       </div>
@@ -105,8 +100,12 @@
       <div id="logList"></div>
       <div class="list-title">Paylaş &amp; Aktar<span class="card-q" data-help="veri" title="Yardım"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span></div>
       <div class="export-row">
-        <button class="btn btn-primary" id="btnShareNative">Paylaş / Dışa Aktar</button>
-        <button class="btn btn-secondary" id="openSync">Kayıt Eşitleme (Paket)</button>
+        <button class="btn btn-primary" id="exportWa">WhatsApp Raporu</button>
+        <button class="btn btn-secondary" id="exportJson">JSON indir</button>
+      </div>
+      <div class="export-row">
+        <button class="btn btn-secondary" id="exportXlsx">Excel indir</button>
+        <button class="btn btn-secondary" id="openSync">Veri Paketi</button>
       </div>
       <div class="mini-note">Veri paketi, telefonlar arasında kayıtları ve kurye listesini taşır. Paketi WhatsApp'tan arkadaşınıza gönderin, o da "Al" ile kendi telefonunu günceller.</div>
     </section>
@@ -445,9 +444,6 @@
 <div class="modal-backdrop" id="shareModal">
   <div class="modal wide">
     <h3 id="shareTitle">Paylaş</h3>
-    <button class="btn btn-ghost" id="shareClose" style="position:absolute;top:10px;right:10px;width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-    </button>
     <p id="shareText">Aşağıdaki metni WhatsApp'ta gönderebilir veya doğrudan paylaşabilirsiniz.</p>
     <textarea id="shareArea" rows="6" readonly style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px"></textarea>
     <div class="btn-row" style="margin-top:12px;margin-bottom:0">
