@@ -3816,7 +3816,7 @@ const Cam = {
     const best=bestCandidate(cands);
     
     /* HİÇBİR ADAY BULUNAMADI - Kullanıcı dostu mesaj */
-    if(!best || best.score < 0){
+    if(!best || !best.plate || best.score < -5){
       this.say('Plaka okunamadı');
       this.status('Elle girmek için "Yaz" butonuna tıklayın', true);
       
