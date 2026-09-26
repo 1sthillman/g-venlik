@@ -2895,6 +2895,28 @@ async function ensureOpenCV(){
   }
 }
 
+/* Basit preprocessing - OpenCV yoksa fallback */
+function preprocessBasic(canvas){
+  try{
+    const ctx = canvas.getContext('2d');
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = img.data;
+    
+    /* Gri tonlama + sabit eşikleme */
+    for(let i = 0; i < d.length; i += 4){
+      let v = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+      v = v > 140 ? 255 : (v < 90 ? 0 : v);
+      d[i] = d[i+1] = d[i+2] = v;
+    }
+    
+    ctx.putImageData(img, 0, 0);
+    return canvas;
+  }catch(e){
+    console.warn('preprocessBasic error:', e);
+    return canvas;
+  }
+}
+
 /* OpenCV ile tam güç ön işleme: Gri → Parlama bastırma → Gürültü → CLAHE → Eğim düzeltme → Adaptif eşikleme */
 function preprocessWithOpenCV(canvas){
   if(!window.cv || !CV_READY) return null;
