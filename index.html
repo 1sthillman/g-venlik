@@ -48,6 +48,14 @@ section.active{ display:block; }
 @keyframes rise{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
 @media (prefers-reduced-motion:reduce){ section{animation:none;} }
 
+/* ---------- developer credit ---------- */
+.dev-credit{ display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--panel); border:1px solid var(--line); border-radius:13px; margin-bottom:12px; }
+.dev-name{ font-size:13px; font-weight:600; color:var(--text); font-family:'Space Grotesk'; }
+.dev-social{ display:flex; gap:6px; }
+.social-btn{ width:32px; height:32px; border-radius:9px; border:1px solid var(--line); background:var(--panel2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:.15s; }
+.social-btn svg{ width:16px; height:16px; stroke:var(--amber); }
+.social-btn:active{ transform:scale(.92); background:var(--panel); }
+
 .search-wrap{ display:flex; gap:8px; margin-bottom:12px; }
 .search-box{ flex:1; display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--line); border-radius:13px; padding:12px 14px; }
 .search-box input{ background:none; border:0; outline:0; color:var(--text); font-size:15px; width:100%; font-family:'Inter'; }
@@ -697,6 +705,30 @@ body.cam-on{ overflow:hidden; }
   <main>
     <!-- ============ ARA ============ -->
     <section id="tab-search" class="active">
+      <div class="dev-credit">
+        <span class="dev-name">Sedat Dağlı</span>
+        <div class="dev-social">
+          <button class="social-btn" id="devInsta1" title="Instagram: @st.hillman">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </button>
+          <button class="social-btn" id="devInsta2" title="Instagram: @ghettomutfak">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </button>
+          <button class="social-btn" id="devWa" title="WhatsApp: 0543 926 96 70">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 20.5l1.5-5a8.4 8.4 0 0 1-.9-3.8 8.4 8.4 0 0 1 8.4-9 8.4 8.4 0 0 1 9 8.4Z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
       <div class="search-wrap">
         <div class="search-box">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C8B8B" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -4270,6 +4302,10 @@ $('#rowDev').onclick=()=>{
       }
     ]);
 };
+/* Arama ekranındaki sosyal medya butonları */
+$('#devInsta1').onclick=()=>{ window.open('https://instagram.com/st.hillman','_blank'); sfx.tap(); };
+$('#devInsta2').onclick=()=>{ window.open('https://instagram.com/ghettomutfak','_blank'); sfx.tap(); };
+$('#devWa').onclick=()=>{ window.open('https://wa.me/905439269670','_blank'); sfx.tap(); };
 $('#rowWipe').onclick=async ()=>{
   const ok=await ask('Tüm veriler silinsin mi?','Bu telefondaki tüm kayıtlar, kuryeler ve eklediğiniz bloklar kalıcı olarak silinir. Geri alınamaz.');
   if(!ok) return;
@@ -4358,12 +4394,60 @@ function siteCard(site, OVR){
   el.querySelector('[data-a="units"]').onclick=()=>editUnitsForm(site);
   el.querySelector('[data-a="pos"]').onclick=async ()=>{
     closeSiteMgr();
-    /* Yeniden konumlandırmaya izin ver */
-    if(site.box){ 
-      const ok = await ask('Yeniden konumlandır?', site.name+' planda zaten işaretli. Yeni konum belirlemek istiyor musunuz?');
-      if(!ok) return;
-    }
-    setTab('map'); placing=site.id; toast('Plan üzerinde bloğun yerine dokunun','ok');
+    
+    /* Google Maps ile Çınarköy Evleri bölgesinde konumlandırma */
+    const siteName = encodeURIComponent(site.name);
+    const cinarkoyLat = 40.8924;
+    const cinarkoyLng = 29.4186;
+    
+    /* Onay iste */
+    const ok = await ask(
+      'Google Maps ile konumlandır', 
+      site.name + ' için Google Maps açılacak. Çınarköy Evleri bölgesinde bloğun konumunu pin ile işaretleyin. Koordinatları kopyalayıp buraya geri yapıştırın.',
+      'Haritayı Aç'
+    );
+    
+    if(!ok) return;
+    
+    /* Google Maps'i Çınarköy Evleri konumunda aç */
+    const mapsUrl = `https://www.google.com/maps/search/${siteName}/@${cinarkoyLat},${cinarkoyLng},17z`;
+    window.open(mapsUrl, '_blank');
+    
+    /* Kullanıcıdan koordinat girmesini iste */
+    toast('Harita açıldı — konumu pin ile işaretleyin','ok');
+    
+    setTimeout(() => {
+      openForm({ 
+        title: 'Koordinatları yapıştırın', 
+        text: 'Google Maps\'te bloğu bulup konumu işaretleyin. URL\'deki koordinatları (örn: 40.8924,29.4186) kopyalayıp buraya yapıştırın.',
+        fields: [
+          { id: 'coords', label: 'Koordinatlar (lat,lng)', value: '', placeholder: '40.8924,29.4186' }
+        ],
+        ok: 'Kaydet',
+        onOk: v => {
+          const coords = String(v.coords || '').trim();
+          if(!coords.match(/^-?\d+\.\d+\s*,\s*-?\d+\.\d+$/)) {
+            toast('Geçersiz format. Örnek: 40.8924,29.4186', 'err');
+            return false;
+          }
+          
+          const [lat, lng] = coords.split(',').map(s => parseFloat(s.trim()));
+          
+          /* Koordinatları kaydet (box formatına dönüştür - örnek değerler) */
+          setOvr(site.id, { 
+            box: [100, 100, 140, 80], // Placeholder - asıl haritada kullanılmayacak
+            gpsLat: lat,
+            gpsLng: lng
+          });
+          
+          rebuild(); 
+          renderSiteMgr();
+          toast(site.name + ' konumu kaydedildi: ' + coords, 'ok');
+          sfx.ok();
+          return true;
+        }
+      });
+    }, 1500);
   };
   el.querySelector('[data-a="hide"]').onclick=async ()=>{
     if(o.off){ setOvr(site.id,{ off:false }); rebuild(); renderSiteMgr(); toast(site.name+' yeniden listeye alındı','ok'); return; }
