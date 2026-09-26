@@ -4290,22 +4290,6 @@ $('#camShot').onclick=()=>{
 };
 $('#camClose').onclick=()=>Cam.close();
 $('#camSwitch').onclick=()=>{ Cam.facing = Cam.facing==='environment'?'user':'environment'; Cam.start(); };
-$('#camTorch').onclick=async ()=>{ 
-  if(!Cam.stream || !Cam.torchAvailable) return;
-  const tracks = Cam.stream.getVideoTracks();
-  if(tracks.length === 0) return;
-  const track = tracks[0];
-  try{
-    Cam.torchOn = !Cam.torchOn;
-    await track.applyConstraints({ advanced: [{ torch: Cam.torchOn }] });
-    $('#camTorchLabel').textContent = Cam.torchOn ? 'Flaş Açık' : 'Flaş';
-    $('#camTorch').style.opacity = Cam.torchOn ? '1' : '0.7';
-    toast(Cam.torchOn ? 'Flaş açıldı' : 'Flaş kapatıldı', 'ok');
-  }catch(e){
-    console.error('Torch ayarı başarısız:', e);
-    toast('Flaş değiştirilemedi', 'err');
-  }
-};
 $('#camType').onclick=()=>{ const m=(Cam.ctx&&Cam.ctx.mode)||Cam.ctxMode; Cam.close(); plateTypeDialog(m); };
 $('#camAgain').onclick=()=>{ Cam.reset(); Cam.status('Plakayı çerçeveye alın'); };
 $('#camGallery').onclick=()=>{ $('#camFile').click(); };
