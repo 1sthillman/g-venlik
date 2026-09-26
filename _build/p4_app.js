@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+﻿﻿/* ==========================================================================
    Çınarköy Nöbet — v2.0
    Çevrimdışı çalışan, telefonlar arası aktarılabilir güvenlik nöbet asistanı
    ========================================================================== */
@@ -74,7 +74,7 @@ const sfx = {
 function buzz(ms){ if(P.haptic && navigator.vibrate) { try{ navigator.vibrate(ms||12); }catch(e){} } }
 
 /* ---------------------------------------------------------------- 1. tercihler */
-const DEF = { guard:'', names:[], tts:false, sound:true, haptic:true, autolearn:true, autoPlate:true,
+const DEF = { guard:'', names:[], tts:false, sound:true, haptic:true, autolearn:true, autoPlate:true, autoCam:false,
   autoCam:true, autoFirm:true, rate:1, waLink:'', lastExport:0, lastImport:0, lastSync:0 };
 let P = load('ck_pref', DEF);
 /* Sesli okuma (TTS) varsayılan KAPALI — isteyen Ayarlar'dan açar.
@@ -670,11 +670,7 @@ function paintUnitHistory(){
   $('#usCourier').textContent=list.length?(list[0].courier||'—'):'—';
   const h=$('#unitHistory'); h.innerHTML='';
   if(!list.length){ h.innerHTML='<div class="ml"><span>Bu daireye daha önce kayıt yapılmamış</span></div>'; return; }
-  list.slice(0,12).forEach(v=>{ const d=document.createElement('div'); d.className='ml';
-    const co=v.company||firmOf(v.plate,v.courier);
-    d.innerHTML='<div>'+esc(v.courier||'—')+(v.plate?' <span class="plate-sm">'+esc(v.plate)+'</span>':'')+'</div>'
-      +'<span>'+fmtTR(v.ts,true)+' · '+esc(v.guard||'—')+(co?' · '+esc(co):'')+'</span>';
-    h.appendChild(d); });
+  h.innerHTML='<div class="ml" style="justify-content:center;text-align:center;padding:12px 0;"><span style="color:var(--sub);font-size:13px;line-height:1.4;">Toplam '+list.length+' giriş kaydı var.<br>Detayları Kayıtlar veya Excel üzerinden görebilirsiniz.</span></div>';
 }
 function mapsUrl(site, code){
   if(site.lat&&site.lng) return 'https://www.google.com/maps?q='+site.lat+','+site.lng;
@@ -1509,7 +1505,7 @@ const Cam = {
       const v=$('#camVideo'); v.srcObject=this.stream; v.style.display='block'; $('#camPh').style.display='none';
       try{ await v.play(); }catch(e){}
       $('#camShot').disabled=false; $('#camSwitch').disabled=false;
-      this.status('Plakayı çerçeveye alın');
+      this.status('Plakayı çerçeveye alın → Tara butonuna basın');
       if(P.autoCam) this.autoT=setTimeout(()=>{ if(this.stream) this.shoot(); }, 1500);
     }catch(e){
       const why = (e&&e.name==='NotAllowedError') ? 'Kamera izni verilmedi.'
@@ -1968,12 +1964,22 @@ function rangeStart(){
   if(logRange==='today') return startOfToday();
   return startOfToday()-(parseInt(logRange,10)-1)*86400000;
 }
+let logBlockSite='';
 function filteredLog(){
   const q=keyOf($('#logSearch')?$('#logSearch').value:''); const from=rangeStart();
-  /* firma adı ve not da aranır — listede görünen her şey aranabilir olmalı */
-  return VISITS.filter(v=>v.ts>=from && (!q ||
+  const bSite=logBlockSite;
+  return VISITS.filter(v=>v.ts>=from
+    && (!bSite || SITES.some(s=>s.id===bSite && s.name===v.site))
+    && (!q ||
     keyOf(v.site+' '+v.unit+' '+v.courier+' '+(v.company||firmOf(v.plate,v.courier))
       +' '+v.plate+' '+v.guard+' '+(v.note||'')).indexOf(q)>=0));
+}
+function populateLogFilter(){
+  const sel=$('#logBlockFilter'); if(!sel) return;
+  const prev=sel.value;
+  sel.innerHTML='<option value="">Tüm Bloklar</option>';
+  SITES.forEach(s=>{ const o=document.createElement('option'); o.value=s.id; o.textContent=s.name; sel.appendChild(o); });
+  if(prev) sel.value=prev;
 }
 function renderLog(){
   const box=$('#logList'); if(!box) return;
@@ -2007,7 +2013,8 @@ function renderLog(){
   });
 }
 $('#logSearch').addEventListener('input', renderLog);
-$$('#logRange > div').forEach(d=>{ d.onclick=()=>{ logRange=d.dataset.r;
+$$#logBlockFilter.addEventListener('change',()=>{ logBlockSite=#logBlockFilter.value; renderLog(); });
+('#logRange > div').forEach(d=>{ d.onclick=()=>{ logRange=d.dataset.r;
   $$('#logRange > div').forEach(x=>x.classList.toggle('on',x===d)); sfx.tap(); renderLog(); }; });
 function openEntry(v){
   openForm({ title:v.site+' · '+v.unit, text:'Kayıt: '+fmtTR(v.ts,true)+' · Görevli: '+(v.guard||'—'),
@@ -2180,27 +2187,31 @@ function reportText(list, title){
     +(v.plate?'  |  Plaka: '+v.plate:'')+'\n    Görevli: '+(v.guard||'—')+'\n'; });
   return s;
 }
-$('#exportWa').onclick=()=>{
-  const list=filteredLog();
-  if(!list.length){ toast('Paylaşılacak kayıt yok','err'); return; }
-  const text=reportText(list.slice(0,60));
-  openShare('WhatsApp raporu', text, new Blob([text],{type:'text/plain;charset=utf-8'}), 'cinarkoy-rapor-'+fileStamp()+'.txt');
-};
-$('#exportJson').onclick=async ()=>{
-  const pkg=await buildPackage('full');
-  downloadBlob(new Blob([JSON.stringify(pkg)],{type:'application/json'}), 'cinarkoy-veri-'+fileStamp()+'.json');
-  P.lastExport=Date.now(); savePrefs();
-};
-$('#exportXlsx').onclick=()=>{
-  if(!window.XLSX){ toast('Excel kitaplığı yüklenemedi','err'); return; }
-  const rows=filteredLog().map(v=>({ Blok:v.site, Daire:v.unit, Kurye:v.courier,
-    Firma:(v.company||firmOf(v.plate,v.courier)), Plaka:v.plate, Görevli:v.guard, Not:v.note||'',
-    Tarih:new Date(v.ts).toLocaleDateString('tr-TR'), Saat:fmtTR(v.ts) }));
-  if(!rows.length){ toast('Kayıt yok','err'); return; }
-  const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Kayıtlar');
-  const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
-  downloadBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'cinarkoy-kayitlar-'+fileStamp()+'.xlsx');
+#btnShareNative.onclick=()=>{
+  openActions('Paylaş / Dışa Aktar', 'Raporu hangi formatta paylaşmak istiyorsunuz?', [
+    { t:'Excel Tablosu (.xlsx)', run:async ()=>{
+        if(!window.XLSX){ toast('Excel yüklenemedi','err'); return; }
+        const rows=filteredLog().map(v=>({ Blok:v.site, Daire:v.unit, Kurye:v.courier, Firma:(v.company||firmOf(v.plate,v.courier)), Plaka:v.plate, Görevli:v.guard, Not:v.note||'', Tarih:new Date(v.ts).toLocaleDateString('tr-TR'), Saat:fmtTR(v.ts) }));
+        if(!rows.length){ toast('Kayıt yok','err'); return; }
+        const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Kayıtlar');
+        const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+        const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+        const name='cinarkoy-kayitlar-'+fileStamp()+'.xlsx';
+        if(navigator.share){ try{ await navigator.share({files:[new File([blob],name,{type:blob.type})]}); }catch(e){ downloadBlob(blob,name); } } else { downloadBlob(blob,name); }
+    } },
+    { t:'Metin Raporu (.txt)', run:async ()=>{
+        const rows=filteredLog(); if(!rows.length){ toast('Kayıt yok','err'); return; }
+        let text='Çınarköy Nöbet Kayıtları\n------------------------\n';
+        rows.forEach(v=>{ text+=fmtTR(v.ts,true)+' | '+v.site+' '+v.unit+' | '+(v.courier||'İsimsiz')+(v.plate?' ('+v.plate+')':'')+'\n'; });
+        const blob=new Blob([text],{type:'text/plain;charset=utf-8'}); const name='cinarkoy-rapor-'+fileStamp()+'.txt';
+        if(navigator.share){ try{ await navigator.share({text:text}); }catch(e){ downloadBlob(blob,name); } } else { downloadBlob(blob,name); }
+    } },
+    { t:'JSON Veritabanı (.json)', run:async ()=>{
+        const pkg=await buildPackage('full'); const json=JSON.stringify(pkg);
+        const blob=new Blob([json],{type:'application/json'}); const name='cinarkoy-veri-'+fileStamp()+'.json';
+        if(navigator.share){ try{ await navigator.share({files:[new File([blob],name,{type:blob.type})]}); }catch(e){ downloadBlob(blob,name); } } else { downloadBlob(blob,name); }
+    } }
+  ]);
 };
 $('#rowWaLink').onclick=()=>{
   openForm({ title:'WhatsApp bağlantısı', text:'Grubun veya kişinin https://chat.whatsapp.com/… bağlantısını yapıştırın. Boş bırakılırsa numara seçme ekranı açılır.',
@@ -2502,7 +2513,7 @@ $('#rowWipe').onclick=async ()=>{
   await dbWipe(S_V); await dbWipe(S_C);
   localStorage.removeItem('ck_sites'); localStorage.removeItem('ck_notes');
   localStorage.removeItem('ck_ovr'); resetOvrCache();
-  NOTES={}; rebuild(); await refresh(); renderLog(); toast('Tüm veriler silindi','ok');
+  NOTES={}; rebuild(); await refresh(); populateLogFilter(); renderLog(); toast('Tüm veriler silindi','ok');
 };
 $('#setBtn').onclick=()=>setTab('set');
 $('#rowCounts').onclick=()=>{
@@ -2994,8 +3005,78 @@ function checkEnv(){
   try{ await openDB(); }catch(e){ LS_MODE=true;
     setTimeout(()=>toast('Veritabanı açılamadı — kayıtlar tarayıcı belleğinde tutuluyor','err'),1800); }
   try{ const lg=await readLegacy(); if(lg.length){ const n=await migrateLegacy(lg); if(n) setTimeout(()=>toast(n+' eski kayıt aktarıldı','ok'),1400); } }catch(e){}
-  rebuild(); await refresh(); renderLog(); paintPrefs(); paintSyncState(); checkEnv();
+  rebuild(); await refresh(); populateLogFilter(); renderLog(); paintPrefs(); paintSyncState(); checkEnv();
   setInterval(tickClock,15000); tickClock();
   if(!P.guard) setTimeout(()=>openNameModal(false), 700);
   window.addEventListener('beforeunload', ()=>{ try{ speechSynthesis.cancel(); }catch(e){} });
+
+/* ---------------------------------------------------------------- MAP ZOOM */
+(function initMapZoom(){
+  const frame = document.querySelector('.map-frame');
+  const img = $('#mapImg');
+  const svg = $('#hotspots');
+  if(!frame || !img) return;
+
+  let scale=1, minScale=0.5, maxScale=4;
+  let posX=0, posY=0;
+  let startDist=0, startScale=1;
+  let lastTouchX=0, lastTouchY=0, lastTouchX2=0, lastTouchY2=0;
+  let isPinching=false;
+
+  function applyTransform(){
+    const t='scale('+scale+') translate('+posX+'px,'+posY+'px)';
+    img.style.transform=t; svg.style.transform=t;
+    img.style.transformOrigin='0 0'; svg.style.transformOrigin='0 0';
+  }
+
+  function clamp(v,mn,mx){ return Math.min(mx,Math.max(mn,v)); }
+
+  function zoomTo(newScale, cx, cy){
+    const rect=frame.getBoundingClientRect();
+    const ox = (cx-rect.left)/scale - posX;
+    const oy = (cy-rect.top)/scale - posY;
+    scale = clamp(newScale, minScale, maxScale);
+    posX = (cx-rect.left)/scale - ox;
+    posY = (cy-rect.top)/scale - oy;
+    applyTransform();
+  }
+
+  // Buttons
+  const inBtn=$('#mapZoomIn'), outBtn=$('#mapZoomOut'), resetBtn=$('#mapZoomReset');
+  if(inBtn) inBtn.addEventListener('click',()=>{ const r=frame.getBoundingClientRect(); zoomTo(scale*1.5,r.left+r.width/2,r.top+r.height/2); });
+  if(outBtn) outBtn.addEventListener('click',()=>{ const r=frame.getBoundingClientRect(); zoomTo(scale/1.5,r.left+r.width/2,r.top+r.height/2); });
+  if(resetBtn) resetBtn.addEventListener('click',()=>{ scale=1; posX=0; posY=0; applyTransform(); });
+
+  // Mouse wheel zoom
+  frame.addEventListener('wheel',e=>{ e.preventDefault(); const delta=e.deltaY<0?1.2:0.85; zoomTo(scale*delta,e.clientX,e.clientY); },{passive:false});
+
+  // Touch pinch zoom
+  frame.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      isPinching=true;
+      const dx=e.touches[1].clientX-e.touches[0].clientX;
+      const dy=e.touches[1].clientY-e.touches[0].clientY;
+      startDist=Math.sqrt(dx*dx+dy*dy);
+      startScale=scale;
+      lastTouchX=(e.touches[0].clientX+e.touches[1].clientX)/2;
+      lastTouchY=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    } else { isPinching=false; }
+  },{passive:true});
+
+  frame.addEventListener('touchmove',e=>{
+    if(e.touches.length===2){
+      e.preventDefault();
+      const dx=e.touches[1].clientX-e.touches[0].clientX;
+      const dy=e.touches[1].clientY-e.touches[0].clientY;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      const newScale=clamp(startScale*(dist/startDist),minScale,maxScale);
+      const cx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+      const cy=(e.touches[0].clientY+e.touches[1].clientY)/2;
+      zoomTo(newScale,cx,cy);
+    }
+  },{passive:false});
+
+  frame.addEventListener('touchend',()=>{ isPinching=false; });
+})();
+
 })();
