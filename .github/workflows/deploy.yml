@@ -57,13 +57,14 @@ jobs:
             plateRecognizer: {
               apiKeys: [
                 '${{ secrets.PLATE_RECOGNIZER_KEY_1 }}',
-                '${{ secrets.PLATE_RECOGNIZER_KEY_2 }}'
+                '${{ secrets.PLATE_RECOGNIZER_KEY_2 }}',
+                '${{ secrets.PLATE_RECOGNIZER_KEY_3 }}'
               ],
               apiUrl: 'https://api.platerecognizer.com/v1/plate-reader/',
               totalCapacity: {
-                monthly: 5000,
-                daily: 166,
-                hourly: 7
+                monthly: 7500,
+                daily: 250,
+                hourly: 10
               }
             },
             

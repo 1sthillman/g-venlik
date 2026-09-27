@@ -45,13 +45,14 @@ const OCR_CONFIG = {
   plateRecognizer: {
     apiKeys: [
       'YOUR_PLATE_RECOGNIZER_KEY_1',  // Key 1: 2,500/ay
-      'YOUR_PLATE_RECOGNIZER_KEY_2'   // Key 2: 2,500/ay
+      'YOUR_PLATE_RECOGNIZER_KEY_2',  // Key 2: 2,500/ay
+      'YOUR_PLATE_RECOGNIZER_KEY_3'   // Key 3: 2,500/ay
     ],
     apiUrl: 'https://api.platerecognizer.com/v1/plate-reader/',
     totalCapacity: {
-      monthly: 5000,
-      daily: 166,
-      hourly: 7
+      monthly: 7500,
+      daily: 250,
+      hourly: 10
     }
   },
   
