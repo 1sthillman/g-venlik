@@ -1492,7 +1492,7 @@ body.cam-on{ overflow:hidden; }
           <span>Çerçeve Yükseklik</span>
           <span class="cam-slider-value" id="frameHeightValue">28%</span>
         </div>
-        <input type="range" class="cam-slider-input" id="frameHeight" min="15" max="40" value="28" step="1">
+        <input type="range" class="cam-slider-input" id="frameHeight" min="15" max="50" value="28" step="1">
       </div>
       <div class="cam-slider-row">
         <div class="cam-slider-label">
@@ -3451,21 +3451,23 @@ const Cam = {
       const touch = e.touches[0];
       const viewRect = $('#camView').getBoundingClientRect();
       
-      // Delta hesapla (diagonal resize)
+      // Delta hesapla (X ve Y ayrı ayrı)
       const deltaX = touch.clientX - startTouch.x;
       const deltaY = touch.clientY - startTouch.y;
       
-      // Ortalama delta (diagonal)
-      const deltaAvg = (deltaX + deltaY) / 2;
-      const deltaPercent = (deltaAvg / viewRect.width) * 100;
+      // X ve Y'yi viewport'a göre percent'e çevir
+      const deltaPercentX = (deltaX / viewRect.width) * 100;
+      const deltaPercentY = (deltaY / viewRect.height) * 100;
       
-      // Yeni boyutlar
-      let newWidth = startSize.width + deltaPercent * 2; // *2 çünkü her iki yandan büyüyor
-      let newHeight = startSize.height + deltaPercent * 0.7; // Aspect ratio için
+      // Yeni boyutlar - X ve Y bağımsız
+      // deltaX pozitif = sağa → genişlet
+      // deltaY pozitif = aşağı → yüksekliği artır
+      let newWidth = startSize.width + deltaPercentX * 2; // *2 çünkü merkezden her iki yana büyüyor
+      let newHeight = startSize.height + deltaPercentY * 2; // *2 çünkü merkezden yukarı aşağı büyüyor
       
       // Sınırlar
       newWidth = Math.max(50, Math.min(95, newWidth));
-      newHeight = Math.max(15, Math.min(40, newHeight));
+      newHeight = Math.max(15, Math.min(50, newHeight));
       
       // Slider'ları güncelle
       $('#frameWidth').value = Math.round(newWidth);
@@ -3483,6 +3485,10 @@ const Cam = {
       guide.style.right = leftRight + '%';
       guide.style.top = topBottom + '%';
       guide.style.height = newHeight + '%';
+      
+      // cropArea'yı güncelle
+      this.cropArea.top = topBottom;
+      this.cropArea.height = newHeight;
       
       this.updateOverlay();
     }, { passive: false });
@@ -3514,6 +3520,10 @@ const Cam = {
     guide.style.right = leftRight + '%';
     guide.style.top = topBottom + '%';
     guide.style.height = height + '%';
+    
+    // cropArea'yı güncelle
+    this.cropArea.top = topBottom;
+    this.cropArea.height = height;
     
     this.updateOverlay();
   },
@@ -4627,6 +4637,10 @@ $('#frameHeight').oninput=(e)=>{
   const topBottom = (100 - val) / 2;
   guide.style.top = topBottom + '%';
   guide.style.height = val + '%';
+  
+  // cropArea'yı güncelle
+  Cam.cropArea.top = topBottom;
+  Cam.cropArea.height = parseFloat(val);
   
   Cam.updateOverlay();
 };
