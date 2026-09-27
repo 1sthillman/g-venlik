@@ -5092,31 +5092,82 @@ const Cam = {
     
     /* ===== 1. GEREKSIZ YAZILAR (Blacklist) ===== */
     const blacklist = [
-      'TR',           // Türkiye bayrağı yanındaki TR
-      'TUR',          // Turkey
-      'TURKEY',
-      'TÜRKIYE',
-      'TC',           // T.C.
-      'REP',          // Republic
-      'WWW',          // Web adresleri
-      'HTTP',
-      'COM',
-      'NET',
-      'ORG',
-      'PLAKA',        // Çerçeve yazıları
-      'PLATE',
-      'LICENSE',
-      'LISANS',
-      'AUTO',
-      'OTO',
-      'RENT',
-      'KİRALIK',
-      'SATILIK',
-      'FOR SALE',
-      'TEL',          // Telefon
-      'GSM',
-      'MOBIL',
-      'MOBILE'
+      /* Ülke/Bayrak */
+      'TR', 'TUR', 'TURKEY', 'TÜRKIYE', 'TC', 'REP', 'REPUBLIC',
+      
+      /* Plaka Çerçevesi Yazıları */
+      'PLAKA', 'PLATE', 'LICENSE', 'LISANS', 'ÇERÇEVE', 'FRAME',
+      'TUNING', 'CUSTOM', 'MODIFIED', 'ÖZEL', 'EURO',
+      
+      /* Araç İşletmeleri */
+      'OTO', 'AUTO', 'CAR', 'ARAÇ', 'ARABA', 'VEHICLE',
+      'RENT', 'KİRALIK', 'RENTAL', 'LEASE',
+      'SATILIK', 'FOR SALE', 'SALE', 'SATIŞ',
+      'GALERİ', 'GALLERY', 'SHOWROOM', 'BAYI', 'DEALER',
+      'SERVİS', 'SERVICE', 'TAMİR', 'REPAIR', 'GARAGE', 'GARAJ',
+      'YEDEK', 'PARÇA', 'PARTS', 'SPARE',
+      'BOYA', 'PAINT', 'KAPLAMA', 'WRAP',
+      'LASTİK', 'TIRE', 'TYRE', 'JANT', 'RIM', 'WHEEL',
+      'MOTOR', 'ENGINE', 'MEKANİK', 'MECHANIC',
+      
+      /* Araç Markaları - Türk */
+      'TOFAŞ', 'TOGG', 'KARSAN', 'BMC', 'TEMSA', 'OTOKAR',
+      
+      /* Araç Markaları - Dünya */
+      'TOYOTA', 'HONDA', 'NISSAN', 'MAZDA', 'SUZUKI', 'MITSUBISHI', 'SUBARU', 'ISUZU', 'DAIHATSU',
+      'HYUNDAI', 'KIA', 'DAEWOO', 'SSANGYONG',
+      'FORD', 'CHEVROLET', 'DODGE', 'JEEP', 'CHRYSLER', 'BUICK', 'CADILLAC', 'GMC', 'HUMMER', 'LINCOLN',
+      'MERCEDES', 'BMW', 'AUDI', 'VOLKSWAGEN', 'PORSCHE', 'OPEL', 'SKODA', 'SEAT',
+      'RENAULT', 'PEUGEOT', 'CITROEN', 'DACIA', 'DS',
+      'FIAT', 'ALFA', 'ROMEO', 'LANCIA', 'FERRARI', 'LAMBORGHINI', 'MASERATI', 'PAGANI',
+      'VOLVO', 'SAAB', 'KOENIGSEGG',
+      'JAGUAR', 'LAND', 'ROVER', 'BENTLEY', 'ROLLS', 'ROYCE', 'ASTON', 'MARTIN', 'LOTUS', 'MCLAREN', 'MINI',
+      'LADA', 'MOSKVICH', 'UAZ', 'GAZ',
+      'TATA', 'MAHINDRA',
+      'CHERY', 'GEELY', 'BYD', 'GREAT', 'WALL', 'HAVAL', 'MG', 'SAIC',
+      'TESLA', 'RIVIAN', 'LUCID',
+      
+      /* Motorsiklet Markaları */
+      'YAMAHA', 'KAWASAKI', 'SUZUKI', 'HONDA', 'DUCATI', 'APRILIA', 'PIAGGIO', 'VESPA',
+      'HARLEY', 'DAVIDSON', 'INDIAN', 'TRIUMPH', 'NORTON', 'ROYAL', 'ENFIELD',
+      'KTM', 'HUSQVARNA', 'BMW', 'BENELLI', 'MV', 'AGUSTA',
+      'MOTOSIKLET', 'MOTORCYCLE', 'MOTOR', 'BIKE', 'MOPED', 'SCOOTER',
+      
+      /* Model Adları (Sık Görülenler) */
+      'COROLLA', 'CAMRY', 'YARIS', 'HILUX', 'LAND CRUISER', 'RAV4', 'PRIUS',
+      'CIVIC', 'ACCORD', 'CR-V', 'FIT', 'JAZZ',
+      'FOCUS', 'FIESTA', 'MUSTANG', 'RANGER', 'TRANSIT', 'KUGA', 'PUMA',
+      'GOLF', 'PASSAT', 'POLO', 'TIGUAN', 'TOUAREG', 'JETTA', 'CADDY', 'TRANSPORTER',
+      'CLIO', 'MEGANE', 'CAPTUR', 'KADJAR', 'KOLEOS', 'TALISMAN', 'MASTER',
+      'OCTAVIA', 'SUPERB', 'KODIAQ', 'KAROQ', 'FABIA',
+      'ASTRA', 'CORSA', 'INSIGNIA', 'MOKKA', 'CROSSLAND', 'GRANDLAND',
+      'PANDA', 'PUNTO', 'TIPO', 'EGEA', 'DOBLO', 'DUCATO', 'FIORINO',
+      'LOGAN', 'SANDERO', 'DUSTER', 'LODGY', 'DOKKER',
+      
+      /* İletişim */
+      'TEL', 'TELNO', 'GSM', 'MOBIL', 'MOBILE', 'PHONE', 'TELEFON',
+      'WWW', 'HTTP', 'HTTPS', 'COM', 'NET', 'ORG', 'TR',
+      'MAIL', 'EMAIL', 'INFO', 'CONTACT', 'İLETİŞİM',
+      
+      /* Genel İşletme */
+      'LTD', 'ŞTİ', 'AŞ', 'INC', 'LLC', 'GMBH', 'CO', 'COMPANY', 'ŞİRKET',
+      'MERKEZ', 'CENTER', 'CENTRE', 'ŞUBE', 'BRANCH',
+      'ÇARŞI', 'PAZAR', 'MARKET', 'SHOP', 'STORE', 'MAĞAZA', 'DÜKKAN',
+      
+      /* Reklam/Kampanya */
+      'KAMPANYA', 'CAMPAIGN', 'İNDİRİM', 'DISCOUNT', 'SALE', 'OFFER',
+      'FIYAT', 'PRICE', 'TL', 'LIRA', 'EURO', 'DOLAR', 'DOLLAR',
+      'TAKSIT', 'INSTALLMENT', 'KREDİ', 'CREDIT', 'LOAN',
+      
+      /* Kalite/Sertifika */
+      'KALİTE', 'QUALITY', 'ORJİNAL', 'ORIGINAL', 'GENUINE', 'AUTHENTIC',
+      'GARANTİ', 'WARRANTY', 'GARANTI', 'CERTIFIED', 'SERTİFİKALI',
+      'ISO', 'CE', 'TSE', 'STANDARD',
+      
+      /* Diğer */
+      'VIP', 'PREMIUM', 'LUXURY', 'LUX', 'DELUXE', 'ÖZEL',
+      'YILDIZ', 'STAR', 'ELIT', 'ELITE', 'PLATINUM', 'GOLD', 'SILVER',
+      'NEW', 'YENİ', 'ESKİ', 'OLD', 'USED', 'İKİNCİEL', 'SIFIR', 'ZERO'
     ];
     
     /* Blacklist kelimelerini temizle */
