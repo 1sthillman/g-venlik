@@ -3498,61 +3498,6 @@ const Cam = {
     // İlk konumu ayarla (merkezde)
     this.updateCropUI();
   },
-        const dy = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
-        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        const viewRect = $('#camView').getBoundingClientRect();
-        
-        // Yükseklik değişimi
-        const heightChange = ((dy - pinchStart.dist) / viewRect.height) * 100;
-        let newHeight = Math.max(8, Math.min(70, pinchStart.height + heightChange));
-        
-        // Merkez değişimi - kullanıcı parmakları neredeyse oraya odaklan
-        const newCenterY = ((centerY - viewRect.top) / viewRect.height) * 100;
-        
-        // Merkezi koruyarak top hesapla
-        let newTop = newCenterY - (newHeight / 2);
-        
-        // Sınırlar içinde tut
-        newTop = Math.max(2, Math.min(95 - newHeight, newTop));
-        
-        this.cropArea.height = newHeight;
-        this.cropArea.top = newTop;
-        this.updateCropUI();
-      }
-    }, {passive: false});
-    
-    guide.addEventListener('touchend', (e) => {
-      guide.classList.remove('adjusting', 'dragging');
-      
-      if(touchMode === 'drag'){
-        // Sürükleme tamamlandı
-        this.cropArea.lastHeight = this.cropArea.height;
-        toast('Okuma alanı konumlandı', 'ok');
-      } else if(touchMode === 'pinch'){
-        // Pinch tamamlandı
-        this.cropArea.lastHeight = this.cropArea.height;
-        
-        // Çok dar alan uyarısı
-        if(this.cropArea.height < 15){
-          toast('Çok dar alan - plaka tam sığmayabilir', 'warn');
-        } else if(this.cropArea.height > 55){
-          toast('Geniş alan - daha yavaş okuma', 'warn');
-        } else {
-          toast('Okuma alanı ayarlandı', 'ok');
-        }
-      }
-      
-      touchMode = null;
-    });
-    
-    guide.addEventListener('touchcancel', () => {
-      guide.classList.remove('adjusting', 'dragging');
-      touchMode = null;
-    });
-    
-    // İlk konumu ayarla
-    this.updateCropUI();
-  },
   
   updateCropUI(){
     const guide = $('#camGuide');
@@ -3897,6 +3842,29 @@ const Cam = {
       return;
     }
     
+    /* ==================== FLAŞ AKTİVASYONU ==================== */
+    let flashWasOn = false;
+    if(this.torchAvailable && this.stream){
+      const tracks = this.stream.getVideoTracks();
+      if(tracks.length > 0){
+        const track = tracks[0];
+        try{
+          // Eğer flaş zaten açıksa not al
+          flashWasOn = this.torchOn;
+          
+          // Flaş kapalıysa çekim için aç
+          if(!this.torchOn){
+            await track.applyConstraints({ advanced: [{ torch: true }] });
+            console.log('Flaş çekim için açıldı');
+            // Kısa bir bekleme - flaşın etki etmesi için
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }catch(e){
+          console.warn('Flaş açılamadı:', e);
+        }
+      }
+    }
+    
     /* ==================== STATE SET: SHOOTING ==================== */
     this.shootInProgress = true;
     $('#camShot').disabled = true;
@@ -3917,6 +3885,20 @@ const Cam = {
       
       ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
       console.log(`Kare yakalandı: ${canvas.width}x${canvas.height}`);
+      
+      /* FLAŞ KAPAT (eğer çekim için açtıysak) */
+      if(this.torchAvailable && !flashWasOn && this.stream){
+        const tracks = this.stream.getVideoTracks();
+        if(tracks.length > 0){
+          const track = tracks[0];
+          try{
+            await track.applyConstraints({ advanced: [{ torch: false }] });
+            console.log('Flaş çekim sonrası kapatıldı');
+          }catch(e){
+            console.warn('Flaş kapatılamadı:', e);
+          }
+        }
+      }
       
       /* KULLANICI CROP ALANI - Sadece plaka bölgesini al */
       const cropRect = this.getCropRect(canvas.width, canvas.height);
