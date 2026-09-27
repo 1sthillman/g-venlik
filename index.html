@@ -81,8 +81,14 @@ section.active{ display:block; }
   gap:10px; 
 }
 
-/* Mobil için 1 sütun */
-@media (max-width: 480px){ 
+/* Tablet ve mobil için responsive */
+@media (max-width: 768px){ 
+  .accordion{ 
+    grid-template-columns:repeat(2, 1fr); 
+  } 
+}
+
+@media (max-width: 400px){ 
   .accordion{ 
     grid-template-columns:1fr; 
   } 
