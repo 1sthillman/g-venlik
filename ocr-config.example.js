@@ -23,29 +23,35 @@ const OCR_CONFIG = {
   },
   
   // API Ninjas - Image-to-Text API (Alternatif OCR)
-  // ✅ Ücretsiz: 50,000 istek/ay
+  // ✅ Ücretsiz: 50,000 istek/ay per key
   // 📝 Key almak için: https://api-ninjas.com/api/imagetotext
   apiNinjas: {
-    apiKey: 'YOUR_API_NINJAS_KEY',
+    apiKeys: [
+      'YOUR_API_NINJAS_KEY_1',  // Key 1: 50,000/ay
+      'YOUR_API_NINJAS_KEY_2'   // Key 2: 50,000/ay
+    ],
     apiUrl: 'https://api.api-ninjas.com/v1/imagetotext',
     totalCapacity: {
-      monthly: 50000,
-      daily: 1666,
-      hourly: 69
+      monthly: 100000,
+      daily: 3333,
+      hourly: 139
     }
   },
   
   // Plate Recognizer API (Özel plaka tanıma - EN İYİ)
-  // ✅ Ücretsiz: 2,500 istek/ay
+  // ✅ Ücretsiz: 2,500 istek/ay per key
   // 📝 Key almak için: https://platerecognizer.com/
   // 📚 Döküman: https://guides.platerecognizer.com/
   plateRecognizer: {
-    apiKey: 'YOUR_PLATE_RECOGNIZER_KEY',
+    apiKeys: [
+      'YOUR_PLATE_RECOGNIZER_KEY_1',  // Key 1: 2,500/ay
+      'YOUR_PLATE_RECOGNIZER_KEY_2'   // Key 2: 2,500/ay
+    ],
     apiUrl: 'https://api.platerecognizer.com/v1/plate-reader/',
     totalCapacity: {
-      monthly: 2500,
-      daily: 83,
-      hourly: 3
+      monthly: 5000,
+      daily: 166,
+      hourly: 7
     }
   },
   

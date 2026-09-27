@@ -39,18 +39,28 @@ https://github.com/1sthillman/g-venlik/settings/secrets/actions
 - **Secret**: `K83515335988957`
 - ➜ "Add secret" tıkla
 
-#### ✅ Plate Recognizer Key
+#### ✅ Plate Recognizer Keys (2 adet)
 
-**Secret 4: PLATE_RECOGNIZER_KEY**
-- **Name**: `PLATE_RECOGNIZER_KEY`
+**Secret 4: PLATE_RECOGNIZER_KEY_1**
+- **Name**: `PLATE_RECOGNIZER_KEY_1`
 - **Secret**: `331f0384b1863037fceda5eabc0e8c71123c0fe0`
 - ➜ "Add secret" tıkla
 
-#### ✅ API Ninjas Key
+**Secret 5: PLATE_RECOGNIZER_KEY_2**
+- **Name**: `PLATE_RECOGNIZER_KEY_2`
+- **Secret**: `bc160b8cada5f75fcf2558c2be4e20d35a78f430`
+- ➜ "Add secret" tıkla
 
-**Secret 5: API_NINJAS_KEY**
-- **Name**: `API_NINJAS_KEY`
+#### ✅ API Ninjas Keys (2 adet)
+
+**Secret 6: API_NINJAS_KEY_1**
+- **Name**: `API_NINJAS_KEY_1`
 - **Secret**: `mIePOktxAyFCf2hz6nhjsUyfv7HQCbf4mw169QXU`
+- ➜ "Add secret" tıkla
+
+**Secret 7: API_NINJAS_KEY_2**
+- **Name**: `API_NINJAS_KEY_2`
+- **Secret**: `szvl7arFK6INQuJq5EtVnZDvpCrTOj9v6sPsCAyT`
 - ➜ "Add secret" tıkla
 
 ---
@@ -60,14 +70,16 @@ https://github.com/1sthillman/g-venlik/settings/secrets/actions
 Secrets sayfasında şunları görmelisiniz:
 ```
 Repository secrets
-├─ OCR_KEY_1                  ✓ Updated X ago
-├─ OCR_KEY_2                  ✓ Updated X ago
-├─ OCR_KEY_3                  ✓ Updated X ago
-├─ PLATE_RECOGNIZER_KEY      ✓ Updated X ago
-└─ API_NINJAS_KEY            ✓ Updated X ago
+├─ OCR_KEY_1                   ✓ Updated X ago
+├─ OCR_KEY_2                   ✓ Updated X ago
+├─ OCR_KEY_3                   ✓ Updated X ago
+├─ PLATE_RECOGNIZER_KEY_1      ✓ Updated X ago
+├─ PLATE_RECOGNIZER_KEY_2      ✓ Updated X ago
+├─ API_NINJAS_KEY_1            ✓ Updated X ago
+└─ API_NINJAS_KEY_2            ✓ Updated X ago
 ```
 
-**Toplam 5 secret olmalı!**
+**Toplam 7 secret olmalı!**
 
 ---
 
@@ -138,10 +150,10 @@ OCR_CONFIG
 **Sebep:** Secrets eklenmemiş veya yanlış isimlendirilmiş
 
 **Çözüm:**
-1. Secrets sayfasını kontrol et: 5 secret olmalı
+1. Secrets sayfasını kontrol et: 7 secret olmalı
    - `OCR_KEY_1`, `OCR_KEY_2`, `OCR_KEY_3`
-   - `PLATE_RECOGNIZER_KEY`
-   - `API_NINJAS_KEY`
+   - `PLATE_RECOGNIZER_KEY_1`, `PLATE_RECOGNIZER_KEY_2`
+   - `API_NINJAS_KEY_1`, `API_NINJAS_KEY_2`
 2. İsimleri TAM OLARAK kontrol et (büyük harf, alt çizgi)
 3. Workflow'u yeniden tetikle (git push veya manual run)
 
@@ -199,28 +211,33 @@ fetch('https://api.ocr.space/parse/image', {
 
 ## 🎯 Toplam Kapasite
 
-### 3 API - Toplam 127,500 istek/ay
+### 3 API - Toplam 180,000 istek/ay (⬆️ %41 artış!)
 
-#### Plate Recognizer (En iyi)
-- **2,500 istek/ay**
-- Günlük: ~83 istek
-- Saatlik: ~3 istek
+#### Plate Recognizer (En iyi) - 2 KEY
+- **5,000 istek/ay** (2 key × 2,500)
+- Günlük: ~166 istek
+- Saatlik: ~7 istek
+- Otomatik key rotation
 
-#### OCR.space (İkinci seçenek)
+#### OCR.space (İkinci seçenek) - 3 KEY
 - **75,000 istek/ay** (3 key × 25,000)
 - Günlük: ~2,500 istek
 - Saatlik: ~104 istek
+- Otomatik key rotation
 
-#### API Ninjas (Yedek)
-- **50,000 istek/ay**
-- Günlük: ~1,666 istek
-- Saatlik: ~69 istek
+#### API Ninjas (Yedek) - 2 KEY
+- **100,000 istek/ay** (2 key × 50,000)
+- Günlük: ~3,333 istek
+- Saatlik: ~139 istek
+- Otomatik key rotation
 
-### Otomatik Failover:
-1. Plate Recognizer dene
+### Otomatik Failover + Key Rotation:
+1. Plate Recognizer dene (2 key rotation)
 2. Başarısız → OCR.space dene (3 key rotation)
-3. Başarısız → API Ninjas dene
+3. Başarısız → API Ninjas dene (2 key rotation)
 4. Başarısız → Kullanıcıya hata göster
+
+**Toplam 7 key - Her API'de otomatik key rotation!**
 
 ---
 
@@ -250,12 +267,12 @@ fetch('https://api.ocr.space/parse/image', {
 5. ✅ 75,000 istek/ay kapasite
 
 **ŞİMDİ NE YAPMALISINIZ?**
-1. ☑️ GitHub'da 5 secret ekle:
+1. ☑️ GitHub'da 7 secret ekle:
    - OCR_KEY_1, OCR_KEY_2, OCR_KEY_3
-   - PLATE_RECOGNIZER_KEY
-   - API_NINJAS_KEY
+   - PLATE_RECOGNIZER_KEY_1, PLATE_RECOGNIZER_KEY_2
+   - API_NINJAS_KEY_1, API_NINJAS_KEY_2
 2. ☑️ git push ile deployment tetikle
 3. ☑️ GitHub Pages'i test et
-4. ☑️ Plaka okutma dene (3 API otomatik dener)
+4. ☑️ Plaka okutma dene (7 key otomatik rotation!)
 
-**HERŞEY HAZIR! 🚀**
+**180,000 İSTEK/AY KAPASİTE! 🚀**

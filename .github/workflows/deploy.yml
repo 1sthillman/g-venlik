@@ -41,23 +41,29 @@ jobs:
             
             // API Ninjas - Image-to-Text API
             apiNinjas: {
-              apiKey: '${{ secrets.API_NINJAS_KEY }}',
+              apiKeys: [
+                '${{ secrets.API_NINJAS_KEY_1 }}',
+                '${{ secrets.API_NINJAS_KEY_2 }}'
+              ],
               apiUrl: 'https://api.api-ninjas.com/v1/imagetotext',
               totalCapacity: {
-                monthly: 50000,
-                daily: 1666,
-                hourly: 69
+                monthly: 100000,
+                daily: 3333,
+                hourly: 139
               }
             },
             
             // Plate Recognizer API (Özel plaka tanıma)
             plateRecognizer: {
-              apiKey: '${{ secrets.PLATE_RECOGNIZER_KEY }}',
+              apiKeys: [
+                '${{ secrets.PLATE_RECOGNIZER_KEY_1 }}',
+                '${{ secrets.PLATE_RECOGNIZER_KEY_2 }}'
+              ],
               apiUrl: 'https://api.platerecognizer.com/v1/plate-reader/',
               totalCapacity: {
-                monthly: 2500,
-                daily: 83,
-                hourly: 3
+                monthly: 5000,
+                daily: 166,
+                hourly: 7
               }
             },
             

@@ -5058,20 +5058,36 @@ const Cam = {
   },
   
   get plateRecognizerKey(){
-    if(typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.plateRecognizer && OCR_CONFIG.plateRecognizer.apiKey){
-      return OCR_CONFIG.plateRecognizer.apiKey;
+    if(typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.plateRecognizer){
+      // Çoklu key desteği
+      if(OCR_CONFIG.plateRecognizer.apiKeys && OCR_CONFIG.plateRecognizer.apiKeys.length > 0){
+        return OCR_CONFIG.plateRecognizer.apiKeys;
+      }
+      // Tek key (eski format)
+      if(OCR_CONFIG.plateRecognizer.apiKey){
+        return [OCR_CONFIG.plateRecognizer.apiKey];
+      }
     }
-    return null;
+    return [];
   },
   
   get apiNinjasKey(){
-    if(typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.apiNinjas && OCR_CONFIG.apiNinjas.apiKey){
-      return OCR_CONFIG.apiNinjas.apiKey;
+    if(typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.apiNinjas){
+      // Çoklu key desteği
+      if(OCR_CONFIG.apiNinjas.apiKeys && OCR_CONFIG.apiNinjas.apiKeys.length > 0){
+        return OCR_CONFIG.apiNinjas.apiKeys;
+      }
+      // Tek key (eski format)
+      if(OCR_CONFIG.apiNinjas.apiKey){
+        return [OCR_CONFIG.apiNinjas.apiKey];
+      }
     }
-    return null;
+    return [];
   },
   
   currentKeyIndex: 0,
+  currentPlateKeyIndex: 0,
+  currentNinjaKeyIndex: 0,
   keyFailCount: {}, // Her key için başarısızlık sayacı
   apiRequestInProgress: false, // Race condition önleme
   
@@ -5345,7 +5361,8 @@ const Cam = {
   
   /* ==================== PLATE RECOGNIZER API ==================== */
   async readWithPlateRecognizer(canvas, retryCount = 0){
-    if(!this.plateRecognizerKey){
+    const keys = this.plateRecognizerKey;
+    if(!keys || keys.length === 0){
       console.warn('Plate Recognizer API key yok');
       return null;
     }
@@ -5376,7 +5393,7 @@ const Cam = {
         });
       }
       
-      console.log(`Plate Recognizer: ${(blob.size/1024).toFixed(0)}KB, kalite=${quality.toFixed(2)}`);
+      console.log(`Plate Recognizer: ${(blob.size/1024).toFixed(0)}KB, kalite=${quality.toFixed(2)}, key=${this.currentPlateKeyIndex+1}/${keys.length}`);
       
       if(blob.size > 300000){
         this.status('Görüntü yükleniyor... (bu birkaç saniye sürebilir)');
@@ -5396,7 +5413,7 @@ const Cam = {
         response = await fetch('https://api.platerecognizer.com/v1/plate-reader/', {
           method: 'POST',
           headers: {
-            'Authorization': 'Token ' + this.plateRecognizerKey
+            'Authorization': 'Token ' + keys[this.currentPlateKeyIndex]
           },
           body: formData,
           signal: controller.signal
@@ -5407,6 +5424,15 @@ const Cam = {
         
         if(fetchError.name === 'AbortError'){
           console.error('Plate Recognizer timeout');
+          
+          /* Başka key dene */
+          if(retryCount < keys.length - 1){
+            this.currentPlateKeyIndex = (this.currentPlateKeyIndex + 1) % keys.length;
+            console.log(`Timeout, Key ${this.currentPlateKeyIndex+1} deneniyor`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return await this.readWithPlateRecognizer(canvas, retryCount + 1);
+          }
+          
           toast('Plate Recognizer yanıt vermiyor', 'warn');
           return null;
         }
@@ -5418,6 +5444,16 @@ const Cam = {
         console.warn(`Plate Recognizer HTTP ${response.status}`);
         
         if(response.status === 429){
+          console.warn(`Plate Recognizer Key ${this.currentPlateKeyIndex+1} limit aşıldı`);
+          
+          /* Başka key dene */
+          if(retryCount < keys.length - 1){
+            this.currentPlateKeyIndex = (this.currentPlateKeyIndex + 1) % keys.length;
+            console.log(`Key ${this.currentPlateKeyIndex+1}/${keys.length} deneniyor`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return await this.readWithPlateRecognizer(canvas, retryCount + 1);
+          }
+          
           toast('Plate Recognizer günlük limit aşıldı', 'warn');
         }
         
@@ -5448,13 +5484,22 @@ const Cam = {
       
     }catch(e){
       console.error('Plate Recognizer hatası:', e.message);
+      
+      /* Network hatası - başka key dene */
+      if(retryCount < keys.length - 1){
+        this.currentPlateKeyIndex = (this.currentPlateKeyIndex + 1) % keys.length;
+        console.log(`Network hatası, Key ${this.currentPlateKeyIndex+1} deneniyor`);
+        return await this.readWithPlateRecognizer(canvas, retryCount + 1);
+      }
+      
       return null;
     }
   },
   
   /* ==================== API NINJAS IMAGE-TO-TEXT ==================== */
   async readWithApiNinjas(canvas, retryCount = 0){
-    if(!this.apiNinjasKey){
+    const keys = this.apiNinjasKey;
+    if(!keys || keys.length === 0){
       console.warn('API Ninjas key yok');
       return null;
     }
@@ -5485,7 +5530,7 @@ const Cam = {
         });
       }
       
-      console.log(`API Ninjas: ${(blob.size/1024).toFixed(0)}KB, kalite=${quality.toFixed(2)}`);
+      console.log(`API Ninjas: ${(blob.size/1024).toFixed(0)}KB, kalite=${quality.toFixed(2)}, key=${this.currentNinjaKeyIndex+1}/${keys.length}`);
       
       if(blob.size > 300000){
         this.status('Görüntü yükleniyor...');
@@ -5504,7 +5549,7 @@ const Cam = {
         response = await fetch('https://api.api-ninjas.com/v1/imagetotext', {
           method: 'POST',
           headers: {
-            'X-Api-Key': this.apiNinjasKey
+            'X-Api-Key': keys[this.currentNinjaKeyIndex]
           },
           body: formData,
           signal: controller.signal
@@ -5515,6 +5560,15 @@ const Cam = {
         
         if(fetchError.name === 'AbortError'){
           console.error('API Ninjas timeout');
+          
+          /* Başka key dene */
+          if(retryCount < keys.length - 1){
+            this.currentNinjaKeyIndex = (this.currentNinjaKeyIndex + 1) % keys.length;
+            console.log(`Timeout, Key ${this.currentNinjaKeyIndex+1} deneniyor`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return await this.readWithApiNinjas(canvas, retryCount + 1);
+          }
+          
           toast('API Ninjas yanıt vermiyor', 'warn');
           return null;
         }
@@ -5526,6 +5580,16 @@ const Cam = {
         console.warn(`API Ninjas HTTP ${response.status}`);
         
         if(response.status === 429){
+          console.warn(`API Ninjas Key ${this.currentNinjaKeyIndex+1} limit aşıldı`);
+          
+          /* Başka key dene */
+          if(retryCount < keys.length - 1){
+            this.currentNinjaKeyIndex = (this.currentNinjaKeyIndex + 1) % keys.length;
+            console.log(`Key ${this.currentNinjaKeyIndex+1}/${keys.length} deneniyor`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return await this.readWithApiNinjas(canvas, retryCount + 1);
+          }
+          
           toast('API Ninjas günlük limit aşıldı', 'warn');
         }
         
@@ -5555,6 +5619,14 @@ const Cam = {
       
     }catch(e){
       console.error('API Ninjas hatası:', e.message);
+      
+      /* Network hatası - başka key dene */
+      if(retryCount < keys.length - 1){
+        this.currentNinjaKeyIndex = (this.currentNinjaKeyIndex + 1) % keys.length;
+        console.log(`Network hatası, Key ${this.currentNinjaKeyIndex+1} deneniyor`);
+        return await this.readWithApiNinjas(canvas, retryCount + 1);
+      }
+      
       return null;
     }
   },
