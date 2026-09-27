@@ -678,82 +678,163 @@ body.cam-on{ overflow:hidden; }
 /* Firma kartı (oval) */
 .firm-card{
   -webkit-appearance:none; appearance:none; 
-  border:2px solid var(--line); 
+  border:2px solid rgba(255,255,255,.08); 
   background:var(--panel2); 
-  border-radius:18px; 
-  padding:14px 8px; 
+  border-radius:16px; 
+  padding:13px 8px; 
   cursor:pointer; 
   display:flex; 
   flex-direction:column; 
   align-items:center; 
   gap:8px;
-  transition:all .22s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:all .25s cubic-bezier(0.4, 0, 0.2, 1);
   position:relative;
   overflow:hidden;
+  box-shadow:0 2px 8px -2px rgba(0,0,0,.3);
 }
 .firm-card::before{
   content:''; position:absolute; inset:0; 
-  background:radial-gradient(circle at 50% 30%, rgba(255,169,77,.08), transparent 70%);
-  opacity:0; transition:opacity .22s;
+  background:radial-gradient(circle at 50% 0%, rgba(255,255,255,.12), transparent 60%);
+  opacity:0; transition:opacity .25s;
 }
 .firm-card:hover::before{ opacity:1; }
 .firm-card:active{ 
-  transform:scale(0.94); 
-  border-color:var(--amber);
+  transform:scale(0.92); 
+  box-shadow:0 1px 4px rgba(0,0,0,.4);
 }
 .firm-card.active{ 
-  background:var(--amber-dim); 
   border-color:var(--amber); 
-  box-shadow:0 0 0 3px rgba(255,169,77,.15);
+  background:var(--amber-dim);
+  box-shadow:0 0 0 4px rgba(255,169,77,.15), 0 4px 12px -2px rgba(255,169,77,.3);
+  transform:translateY(-2px);
 }
 .firm-card.active::before{ opacity:1; }
 
-/* Firma ikonu */
+/* Stagger animasyon */
+.co-field.open .firm-grid .firm-card{
+  animation:firmCardIn .35s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+.co-field.open .firm-grid .firm-card:nth-child(1){ animation-delay:0.03s; }
+.co-field.open .firm-grid .firm-card:nth-child(2){ animation-delay:0.06s; }
+.co-field.open .firm-grid .firm-card:nth-child(3){ animation-delay:0.09s; }
+.co-field.open .firm-grid .firm-card:nth-child(4){ animation-delay:0.12s; }
+.co-field.open .firm-grid .firm-card:nth-child(5){ animation-delay:0.15s; }
+.co-field.open .firm-grid .firm-card:nth-child(6){ animation-delay:0.18s; }
+.co-field.open .firm-grid .firm-card:nth-child(7){ animation-delay:0.21s; }
+.co-field.open .firm-grid .firm-card:nth-child(8){ animation-delay:0.24s; }
+@keyframes firmCardIn{ 
+  0%{ opacity:0; transform:scale(0.7) translateY(12px) rotateZ(-4deg); }
+  60%{ transform:scale(1.05) translateY(-2px) rotateZ(1deg); }
+  100%{ opacity:1; transform:scale(1) translateY(0) rotateZ(0); } 
+}
+
+/* Firma ikonu - SVG container */
 .firm-icon{
-  width:42px; height:42px; 
+  width:46px; height:46px; 
   border-radius:50%; 
   display:flex; 
   align-items:center; 
   justify-content:center; 
-  font-size:22px; 
   flex-shrink:0;
-  transition:transform .22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition:all .28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow:0 3px 10px -3px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
 }
-.firm-card:active .firm-icon{ transform:scale(0.88); }
+.firm-icon svg{
+  width:24px; height:24px; 
+  color:#fff;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
+}
+.firm-card:hover .firm-icon{ 
+  transform:scale(1.08) rotateZ(5deg); 
+}
+.firm-card:active .firm-icon{ 
+  transform:scale(0.88) rotateZ(-5deg); 
+}
 .firm-card.active .firm-icon{ 
-  transform:scale(1.08); 
-  filter:drop-shadow(0 3px 8px rgba(0,0,0,.3));
+  transform:scale(1.12); 
+  box-shadow:0 6px 16px -4px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);
 }
 
 /* Firma adı */
 .firm-name{
-  font-size:11.5px; 
+  font-size:11px; 
   font-weight:600; 
   color:var(--muted); 
   text-align:center; 
   line-height:1.3;
-  transition:color .18s;
+  transition:color .2s;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
-.firm-card.active .firm-name{ color:var(--amber); }
+.firm-card:hover .firm-name{ color:var(--text); }
+.firm-card.active .firm-name{ color:var(--amber); font-weight:700; }
 
 /* "Yeni Ekle" kartı */
 .firm-card.add-card{ 
-  border-style:dashed; 
-  border-color:rgba(124,139,139,.4);
+  border:2px dashed rgba(124,139,139,.35);
+  background:transparent;
+  box-shadow:none;
 }
 .firm-card.add-card:hover{ 
   border-color:var(--cyan); 
   background:rgba(79,216,201,.08);
+  box-shadow:0 0 0 3px rgba(79,216,201,.1);
 }
 .firm-card.add-card .firm-icon{ 
-  background:transparent; 
-  color:var(--muted); 
-  font-size:32px; 
-  font-weight:300;
+  background:linear-gradient(135deg, rgba(124,139,139,.2), rgba(124,139,139,.1));
+  box-shadow:inset 0 0 0 1px rgba(124,139,139,.3);
 }
-.firm-card.add-card:hover .firm-icon{ color:var(--cyan); }
-.firm-card.add-card .firm-name{ color:var(--muted); font-size:11px; }
+.firm-card.add-card .firm-icon svg{
+  width:22px; height:22px;
+  color:var(--muted);
+  transition:color .2s;
+}
+.firm-card.add-card:hover .firm-icon{ 
+  background:linear-gradient(135deg, rgba(79,216,201,.3), rgba(79,216,201,.2));
+  box-shadow:inset 0 0 0 1px var(--cyan);
+}
+.firm-card.add-card:hover .firm-icon svg{ color:var(--cyan); }
+.firm-card.add-card .firm-name{ color:var(--muted); font-size:10.5px; }
 .firm-card.add-card:hover .firm-name{ color:var(--cyan); }
+
+/* "Yeni Ekle" Modal */
+.firm-add-modal{ max-width:340px; }
+.firm-icon-picker{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:10px;
+}
+.firm-icon-picker button{
+  -webkit-appearance:none; appearance:none;
+  width:100%; aspect-ratio:1;
+  border:2px solid var(--line);
+  background:var(--panel2);
+  border-radius:14px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all .2s;
+}
+.firm-icon-picker button svg{
+  width:28px; height:28px;
+  color:var(--muted);
+  transition:color .2s;
+}
+.firm-icon-picker button:hover{
+  border-color:var(--cyan);
+  background:rgba(79,216,201,.08);
+}
+.firm-icon-picker button:hover svg{ color:var(--cyan); }
+.firm-icon-picker button.active{
+  border-color:var(--amber);
+  background:var(--amber-dim);
+  box-shadow:0 0 0 3px rgba(255,169,77,.15);
+}
+.firm-icon-picker button.active svg{ color:var(--amber); }
+
 
 /* Eski chip stili - geriye uyumluluk için */
 .co-chips{ display:none; flex-wrap:wrap; gap:6px; margin-top:9px; }
@@ -770,7 +851,7 @@ body.cam-on{ overflow:hidden; }
 
 .co-hint{ font-size:11px; color:var(--muted); margin-top:7px; line-height:1.45; }
 .co-field.slim .co-chips{ max-height:132px; overflow-y:auto; }
-.co-field.slim .firm-grid{ max-height:280px; overflow-y:auto; overflow-x:hidden; }
+.co-field.slim .firm-grid{ max-height:320px; overflow-y:auto; overflow-x:hidden; padding-right:4px; }
 
 
 /* ---------- eylem listesi (kayıt sonrası) ---------- */
@@ -1998,16 +2079,33 @@ function extractPlates(text){
 /* Firma serbest metindir; sadece hızlı işaretleme için hazır rozetler vardır.
    Kategori gibi sabit seçim DEĞİLDİR — serbest yazılabilir, açılır/kapanır. */
 
-/* Firma tanımları: name, icon (emoji), color (ikon rengi) */
+/* SVG ikonlar */
+const FIRM_ICONS = {
+  shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/></svg>',
+  pizza: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2z"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><circle cx="12" cy="14" r="1" fill="currentColor"/><circle cx="8" cy="14" r="1" fill="currentColor"/><circle cx="16" cy="14" r="1" fill="currentColor"/></svg>',
+  bolt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg>',
+  cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/><path d="M6 6h15l-1.5 7H8.1"/></svg>',
+  burger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h18M3 11c0-3.3 3.6-6 8-6h2c4.4 0 8 2.7 8 6M3 11v2c0 .6.4 1 1 1h16c.6 0 1-.4 1-1v-2M4 14l.5 5c.1.6.6 1 1.2 1h12.6c.6 0 1.1-.4 1.2-1l.5-5"/></svg>',
+  box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.6A2 2 0 014.1 2h3a2 2 0 012 1.7c.1.7.3 1.4.5 2.1a2 2 0 01-.5 2.1L7.9 9.1a16 16 0 006 6l1.3-1.3c.6-.6 1.4-.8 2.1-.5.7.2 1.4.4 2.1.5a2 2 0 011.7 2z"/></svg>',
+  // Yeni ekle için seçenekler
+  truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h3l3 3v5h-4"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+  coffee: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>',
+  utensils: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 002-2V2M7 2v20M21 15V2M17 6v14a3 3 0 003 3h0"/></svg>',
+  store: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  bike: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 100-2 1 1 0 000 2z"/><path d="M12 17.5V14l-3-3 4-3 2 3h3"/></svg>',
+  gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>'
+};
+
+/* Firma tanımları: name, icon key, gradient colors */
 const FIRM_DEFS = [
-  {name:'Trendyol', icon:'🛍️', color:'#FF6000'},
-  {name:'Yemeksepeti', icon:'🍕', color:'#FF0066'},
-  {name:'Getir', icon:'⚡', color:'#5D3EBC'},
-  {name:'Migros', icon:'🛒', color:'#FF6F00'},
-  {name:'Uber Eats', icon:'🍔', color:'#06C167'},
-  {name:'PaketTaxi', icon:'📦', color:'#00B2A9'},
-  {name:'Alo', icon:'☎️', color:'#FF4444'},
-  {name:'Yemek Mart', icon:'🥗', color:'#00A8E8'}
+  {name:'Trendyol', icon:'shopping', gradient:['#FF6B35', '#F7931E']},
+  {name:'Yemeksepeti', icon:'pizza', gradient:['#FF006E', '#D90368']},
+  {name:'Getir', icon:'bolt', gradient:['#5D3FD3', '#7B2CBF']},
+  {name:'Migros', icon:'cart', gradient:['#FF8500', '#FF6B00']},
+  {name:'Uber Eats', icon:'burger', gradient:['#06C270', '#00B757']},
+  {name:'PaketTaxi', icon:'box', gradient:['#00D9C0', '#00B8A9']},
+  {name:'Alo', icon:'phone', gradient:['#FF5757', '#FF3838']}
 ];
 
 const FIRMS = FIRM_DEFS.map(f=>f.name);
@@ -2032,19 +2130,99 @@ function createFirmCard(firm, isActive, onClick){
   card.dataset.firm = firm.name || firm;
   
   // Firma tanımını bul (yoksa varsayılan)
-  const def = FIRM_DEFS.find(f=>f.name===(firm.name||firm)) || {
-    name:firm.name||firm, 
-    icon:'🏪', 
-    color:'#7C8B8B'
-  };
+  const def = FIRM_DEFS.find(f=>f.name===(firm.name||firm));
   
-  card.innerHTML = `
-    <div class="firm-icon" style="background:${def.color}">${def.icon}</div>
-    <div class="firm-name">${def.name}</div>
-  `;
+  if(def){
+    // Tanımlı firma - gradient ve SVG ikon
+    const [c1, c2] = def.gradient;
+    card.innerHTML = `
+      <div class="firm-icon" style="background:linear-gradient(135deg, ${c1}, ${c2})">
+        ${FIRM_ICONS[def.icon]}
+      </div>
+      <div class="firm-name">${def.name}</div>
+    `;
+  } else {
+    // Kullanıcı ekledi - varsayılan gri + store ikonu
+    card.innerHTML = `
+      <div class="firm-icon" style="background:linear-gradient(135deg, #556270, #4A5568)">
+        ${FIRM_ICONS.store}
+      </div>
+      <div class="firm-name">${firm.name||firm}</div>
+    `;
+  }
   
   if(onClick) card.onclick = onClick;
   return card;
+}
+
+/* "Yeni Ekle" modal'ı aç */
+function openAddFirmModal(){
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop show';
+  modal.style.zIndex = '100';
+  
+  modal.innerHTML = `
+    <div class="modal firm-add-modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0;font-size:17px">Yeni Firma Ekle</h3>
+        <button class="icon-btn sm" onclick="this.closest('.modal-backdrop').remove()" style="width:32px;height:32px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <input id="newFirmNameInput" placeholder="Firma adı (örn: Pizza Home)" style="width:100%;margin-bottom:14px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:14px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">İkon seçin:</div>
+      <div class="firm-icon-picker">
+        <button type="button" data-icon="truck">${FIRM_ICONS.truck}</button>
+        <button type="button" data-icon="coffee">${FIRM_ICONS.coffee}</button>
+        <button type="button" data-icon="utensils">${FIRM_ICONS.utensils}</button>
+        <button type="button" data-icon="store">${FIRM_ICONS.store}</button>
+        <button type="button" data-icon="bike">${FIRM_ICONS.bike}</button>
+        <button type="button" data-icon="gift">${FIRM_ICONS.gift}</button>
+      </div>
+      <div class="btn-row" style="margin-top:16px;margin-bottom:0">
+        <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()" style="flex:0 0 34%">İptal</button>
+        <button class="btn btn-primary" id="confirmAddFirm">Ekle</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  const inp = modal.querySelector('#newFirmNameInput');
+  const iconBtns = modal.querySelectorAll('.firm-icon-picker button');
+  let selectedIcon = 'store';
+  
+  // İkon seçimi
+  iconBtns.forEach(btn=>{
+    btn.onclick = ()=>{
+      iconBtns.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedIcon = btn.dataset.icon;
+    };
+  });
+  iconBtns[3].classList.add('active'); // Varsayılan store
+  
+  // Ekleme
+  modal.querySelector('#confirmAddFirm').onclick = ()=>{
+    const name = inp.value.trim();
+    if(!name){
+      inp.focus();
+      return;
+    }
+    
+    // Firma input'una yaz
+    const courierInp = $('#courierCompanyInput');
+    if(courierInp){
+      courierInp.value = name;
+      paintFirmCards($('#courierCoChips'), name);
+      try{ courierInp.dispatchEvent(new Event('input',{bubbles:true})); }catch(_){}
+    }
+    
+    modal.remove();
+    sfx.tap();
+  };
+  
+  inp.focus();
 }
 
 /* "Yeni Ekle" kartı */
@@ -2053,10 +2231,15 @@ function createAddFirmCard(onClick){
   card.type = 'button';
   card.className = 'firm-card add-card';
   card.innerHTML = `
-    <div class="firm-icon add-icon">+</div>
+    <div class="firm-icon add-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+    </div>
     <div class="firm-name">Yeni Ekle</div>
   `;
-  if(onClick) card.onclick = onClick;
+  card.onclick = e=>{
+    e.preventDefault();
+    openAddFirmModal();
+  };
   return card;
 }
 
