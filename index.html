@@ -72,17 +72,84 @@ section.active{ display:block; }
 .chip{ flex-shrink:0; padding:7px 13px; border-radius:100px; background:var(--panel); border:1px solid var(--line); font-size:12.5px; color:var(--muted); cursor:pointer; white-space:nowrap; transition:.15s; }
 .chip.on{ background:var(--amber-dim); border-color:var(--amber); color:var(--amber); font-weight:600; }
 
-.accordion{ display:flex; flex-direction:column; gap:9px; }
-.acc-item{ background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; transition:border-color .2s; }
-.acc-item.open{ border-color:#33403c; }
-.acc-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 15px; cursor:pointer; }
-.acc-head .ah-name{ font-weight:600; font-size:14.5px; font-family:'Space Grotesk'; }
-.acc-head .ah-count{ font-size:11.5px; color:var(--muted); margin-top:2px; }
-.acc-chev{ color:var(--muted); transition:transform .25s; flex-shrink:0; }
-.acc-item.open .acc-chev{ transform:rotate(180deg); color:var(--amber); }
-.acc-body{ max-height:0; overflow:hidden; transition:max-height .3s ease; }
-.acc-item.open .acc-body{ max-height:800px; }
-.acc-body-inner{ padding:2px 15px 15px; display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.accordion{ 
+  display:grid; 
+  grid-template-columns:repeat(3, 1fr); 
+  gap:10px; 
+}
+
+/* Mobil için 1 sütun */
+@media (max-width: 480px){ 
+  .accordion{ 
+    grid-template-columns:1fr; 
+  } 
+}
+
+.acc-item{ 
+  background:var(--panel); 
+  border:1px solid var(--line); 
+  border-radius:14px; 
+  overflow:hidden; 
+  transition:border-color .2s, transform .15s; 
+}
+
+.acc-item:hover{ 
+  border-color:rgba(255,169,77,.3); 
+}
+
+.acc-item.open{ 
+  border-color:#33403c; 
+  grid-column:1 / -1; /* Açıldığında tüm genişliği kapla */
+}
+
+.acc-head{ 
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+  padding:14px 15px; 
+  cursor:pointer; 
+}
+
+.acc-head .ah-name{ 
+  font-weight:600; 
+  font-size:14.5px; 
+  font-family:'Space Grotesk'; 
+}
+
+.acc-head .ah-count{ 
+  font-size:11.5px; 
+  color:var(--muted); 
+  margin-top:2px; 
+}
+
+.acc-chev{ 
+  color:var(--muted); 
+  transition:transform .25s; 
+  flex-shrink:0; 
+}
+
+.acc-item.open .acc-chev{ 
+  transform:rotate(180deg); 
+  color:var(--amber); 
+}
+
+.acc-body{ 
+  max-height:0; 
+  overflow:hidden; 
+  transition:max-height .3s ease; 
+}
+
+.acc-item.open .acc-body{ 
+  max-height:800px; 
+}
+
+.acc-body-inner{ 
+  padding:2px 15px 15px; 
+  display:grid; 
+  grid-template-columns:repeat(4,1fr); 
+  gap:8px; 
+}
+
 
 .result-list{ display:flex; flex-direction:column; gap:9px; }
 .result{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:13px 14px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:.15s; }
@@ -886,107 +953,50 @@ body.cam-on{ overflow:hidden; }
 #liveBar.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 #liveBar .lb-t{ font-size:10.5px; text-transform:uppercase; letter-spacing:.1em; opacity:.8; display:block; margin-bottom:2px; }
 
-/* ---------- sokak filtresi (Modern 3 Sütun Grid) ---------- */
+/* ---------- sokak filtresi (Tek satır, kaydırılabilir) ---------- */
 .streetrow{ 
-  display:grid !important; 
-  grid-template-columns:repeat(3, 1fr); 
-  gap:10px; 
-  margin:0 0 14px; 
-  padding:0;
+  display:flex !important; 
+  gap:7px; 
+  margin:0 0 12px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+  padding-bottom:3px;
 }
+
+.streetrow::-webkit-scrollbar{ display:none; }
 
 .streetrow .chip{ 
-  flex-shrink:1; 
-  padding:12px 10px;
-  border-radius:14px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:4px;
-  background:var(--panel2);
-  border:2px solid var(--line);
-  transition:all .22s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:0 2px 6px -2px rgba(0,0,0,.2);
-  position:relative;
-  overflow:hidden;
-  min-height:68px;
-  justify-content:center;
+  flex-shrink:0; 
+  padding:7px 13px;
+  border-radius:100px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  font-size:12.5px;
+  color:var(--muted);
+  white-space:nowrap;
+  transition:.15s;
 }
 
-.streetrow .chip::before{
-  content:'';
-  position:absolute;
-  inset:0;
-  background:radial-gradient(circle at 50% 0%, rgba(255,169,77,.06), transparent 60%);
-  opacity:0;
-  transition:opacity .22s;
-}
-
-.streetrow .chip:hover::before{ opacity:1; }
-
-.streetrow .chip:active{ 
-  transform:scale(0.94); 
-  box-shadow:0 1px 3px rgba(0,0,0,.3);
-}
+.streetrow .chip:active{ transform:scale(.94); }
 
 .streetrow .chip.on{ 
   background:var(--amber-dim); 
   border-color:var(--amber); 
-  box-shadow:0 0 0 3px rgba(255,169,77,.12), 0 3px 10px -2px rgba(255,169,77,.25);
-  transform:translateY(-1px);
+  color:var(--amber); 
+  font-weight:600;
 }
-
-.streetrow .chip.on::before{ opacity:1; }
 
 .streetrow .chip .n{ 
-  opacity:.7; 
-  font-size:18px; 
-  font-weight:700;
-  font-family:'Space Grotesk', sans-serif;
-  margin-left:0;
-  margin-top:2px;
-  font-variant-numeric:tabular-nums; 
-  color:var(--text);
-  transition:all .2s;
+  opacity:.6; 
+  font-size:10.5px; 
+  margin-left:4px; 
+  font-variant-numeric:tabular-nums;
 }
 
-.streetrow .chip.on .n{ 
-  opacity:1; 
-  color:var(--amber); 
-  font-size:20px;
-  transform:scale(1.05);
-}
+.streetrow .chip.on .n{ opacity:1; }
 
-/* Sokak adı - chip içinde merkez */
-.streetrow .chip{
-  font-size:11.5px;
-  font-weight:600;
-  text-align:center;
-  line-height:1.3;
-}
-
-.streetrow .chip.on{
-  font-weight:700;
-  color:var(--amber);
-}
-
-/* Stagger animasyon */
-.streetrow .chip{
-  animation:streetChipIn .3s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
-}
-.streetrow .chip:nth-child(1){ animation-delay:0.03s; }
-.streetrow .chip:nth-child(2){ animation-delay:0.06s; }
-.streetrow .chip:nth-child(3){ animation-delay:0.09s; }
-.streetrow .chip:nth-child(4){ animation-delay:0.12s; }
-.streetrow .chip:nth-child(5){ animation-delay:0.15s; }
-.streetrow .chip:nth-child(6){ animation-delay:0.18s; }
-.streetrow .chip:nth-child(7){ animation-delay:0.21s; }
-
-@keyframes streetChipIn{
-  0%{ opacity:0; transform:scale(0.8) translateY(8px); }
-  60%{ transform:scale(1.03) translateY(-2px); }
-  100%{ opacity:1; transform:scale(1) translateY(0); }
-}
 
 
 /* ---------- tam ekran sayfa (adres yöneticisi / yardım) ---------- */
