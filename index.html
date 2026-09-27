@@ -108,6 +108,42 @@ section.active{ display:block; }
 .plot{ fill:transparent; stroke:transparent; stroke-width:2.5; transition:fill .18s, stroke .18s; cursor:pointer; }
 .plot:active{ fill:rgba(255,169,77,.14); }
 .plot.sel{ fill:rgba(255,169,77,.24); stroke:var(--amber); }
+
+/* Harita overlay sokak isimleri */
+.plot-label{ 
+  fill:rgba(255,255,255,.75); 
+  font-size:11px; 
+  font-weight:600; 
+  font-family:'Space Grotesk', system-ui, sans-serif;
+  text-anchor:middle; 
+  dominant-baseline:middle;
+  pointer-events:none;
+  user-select:none;
+  text-shadow:0 1px 3px rgba(0,0,0,.8), 0 0 8px rgba(0,0,0,.6);
+  transition:fill .18s;
+}
+.plot-label.sel{ fill:var(--amber); font-weight:700; }
+
+/* Harita tooltip (hover) */
+.map-tooltip{
+  position:fixed;
+  background:rgba(10,13,13,.95);
+  backdrop-filter:blur(12px);
+  border:1px solid var(--amber);
+  color:#fff;
+  padding:8px 12px;
+  border-radius:8px;
+  font-size:12px;
+  line-height:1.4;
+  pointer-events:none;
+  transform:translate(-50%, -100%);
+  z-index:9999;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+  animation:tooltipFade .2s ease-out;
+}
+.map-tooltip strong{ color:var(--amber); display:block; margin-bottom:2px; }
+@keyframes tooltipFade{ from{ opacity:0; transform:translate(-50%, -90%); } to{ opacity:1; transform:translate(-50%, -100%); } }
+
 .map-caption{ display:flex; align-items:center; gap:8px; margin-top:11px; font-size:12px; color:var(--muted); }
 .dot{ width:7px; height:7px; border-radius:50%; background:var(--amber); box-shadow:0 0 0 3px var(--amber-dim); flex-shrink:0; }
 
@@ -2166,13 +2202,64 @@ function renderStreetChips(){
 
 function buildHotspots(){
   const svg=$('#hotspots'); if(!svg) return; let html='';
-  SITES.forEach(s=>{ if(!s.box) return; const b=s.box;
-    html+='<rect class="plot" data-site="'+esc(s.id)+'" x="'+b[0]+'" y="'+b[1]+'" width="'+b[2]+'" height="'+b[3]+'" rx="10"></rect>'; });
+  SITES.forEach(s=>{ 
+    if(!s.box) return; 
+    const b=s.box;
+    
+    // Rect overlay
+    html+='<rect class="plot" data-site="'+esc(s.id)+'" x="'+b[0]+'" y="'+b[1]+'" width="'+b[2]+'" height="'+b[3]+'" rx="10"></rect>';
+    
+    // Sokak adı label (overlay'in ortasında)
+    const centerX = b[0] + b[2] / 2;
+    const centerY = b[1] + b[3] / 2;
+    html+='<text class="plot-label" x="'+centerX+'" y="'+centerY+'" data-site="'+esc(s.id)+'">'+esc(s.street || s.name)+'</text>';
+  });
   svg.innerHTML=html;
-  $$('.plot',svg).forEach(z=>{ z.addEventListener('click',()=>{
-    if(placing){ placeAt(z.dataset.site, svgPoint(z)); return; }
-    $$('.plot',svg).forEach(o=>o.classList.remove('sel')); z.classList.add('sel');
-    openSitePicker(siteById(z.dataset.site)); }); });
+  
+  // Rect click events
+  $$('.plot',svg).forEach(z=>{ 
+    z.addEventListener('click',()=>{
+      if(placing){ placeAt(z.dataset.site, svgPoint(z)); return; }
+      $$('.plot',svg).forEach(o=>o.classList.remove('sel')); 
+      z.classList.add('sel');
+      
+      // İlgili label'ı da seç
+      const label = svg.querySelector('.plot-label[data-site="'+z.dataset.site+'"]');
+      if(label) label.classList.add('sel');
+      
+      openSitePicker(siteById(z.dataset.site)); 
+    }); 
+    
+    // Hover tooltip - sokak ve blok adı göster
+    z.addEventListener('mouseenter', function(){
+      const site = siteById(this.dataset.site);
+      if(site){
+        const tooltip = document.createElement('div');
+        tooltip.className = 'map-tooltip';
+        tooltip.innerHTML = '<strong>'+esc(site.name)+'</strong><br>'+esc(site.street || 'Sokak belirtilmemiş');
+        tooltip.id = 'mapTooltip';
+        document.body.appendChild(tooltip);
+        
+        const rect = this.getBoundingClientRect();
+        tooltip.style.left = (rect.left + rect.width/2) + 'px';
+        tooltip.style.top = (rect.top - 10) + 'px';
+      }
+    });
+    
+    z.addEventListener('mouseleave', function(){
+      const tooltip = document.getElementById('mapTooltip');
+      if(tooltip) tooltip.remove();
+    });
+  });
+  
+  // Label click events
+  $$('.plot-label',svg).forEach(label=>{ 
+    label.style.cursor = 'pointer';
+    label.addEventListener('click',()=>{
+      const rect = svg.querySelector('.plot[data-site="'+label.dataset.site+'"]');
+      if(rect) rect.click();
+    }); 
+  });
 }
 function svgPoint(target){
   const img=$('#mapImg'), r=img.getBoundingClientRect(), b=target.getBoundingClientRect();
