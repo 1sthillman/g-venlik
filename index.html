@@ -2909,7 +2909,7 @@ function toksOf(q){ return norm(q).split(' ').filter(Boolean); }
 function renderResults(){
   const q=(searchInput.value||'').trim();
   const browse=$('#browseList'), flat=$('#resultList'), hints=$('#srHints');
-  if(!q){ browse.style.display='flex'; flat.style.display='none'; hints.style.display='none'; return; }
+  if(!q){ browse.style.display='grid'; flat.style.display='none'; hints.style.display='none'; return; }
   browse.style.display='none'; flat.style.display='flex';
   const toks=toksOf(q);
   const list=ALL.filter(u=>(!streetFilter||u.site.street===streetFilter)
