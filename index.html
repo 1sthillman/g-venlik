@@ -2235,7 +2235,16 @@ function rebuild(){
     if(s.box && !b.box) b.box=s.box;
     (s.units||[]).forEach(u=>{
       const c=String(typeof u==='string'?u:(u.c||'')).trim().toUpperCase();
-      if(c && !b.units.some(x=>x.c===c)) b.units.push({ c:c, entry:(typeof u==='object'&&u.entry)||'' });
+      if(c && !b.units.some(x=>x.c===c)) {
+        // KOORDİNATLARI DA EKLE!
+        b.units.push({ 
+          c: c, 
+          entry: (typeof u==='object'&&u.entry)||'',
+          lat: (typeof u==='object'&&u.lat)||null,
+          lng: (typeof u==='object'&&u.lng)||null,
+          qr: (typeof u==='object'&&u.qr)||''
+        });
+      }
     });
   });
   /* kullanıcı düzeltmeleri en son uygulanır — her şeyi geçersiz kılar */
