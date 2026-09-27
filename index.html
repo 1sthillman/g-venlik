@@ -4089,28 +4089,56 @@ const Cam = {
     this.prog(10);
     
     try{
-      /* OCR.space API ile dene (önce bu, daha hızlı ve doğru) */
-      const ocrSpaceResult = await this.readWithOcrSpace(raw);
+      /* ==================== GÖRSEL KONTROLÜ ==================== */
+      /* Boş/beyaz görsel kontrolü - OCR.space'e gereksiz istek atmayalım */
+      const ctx = raw.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, raw.width, raw.height);
+      const data = imageData.data;
       
-      if(ocrSpaceResult && ocrSpaceResult.plate){
-        console.log('OCR.space başarılı:', ocrSpaceResult.plate);
-        
-        const cands = plateCandidates(ocrSpaceResult.plate, 90);
-        console.log(`OCR.space sonucu: ${cands.length} aday`, cands);
-        
-        if(cands.length > 0){
-          this.prog(100);
-          setTimeout(() => { this.progOff(); }, 300);
-          this.busy = false;
-          this.scanning(false);
-          this.rawText = ocrSpaceResult.plate;
-          this.deliver(cands, [ocrSpaceResult.plate], []);
-          return;
-        }
+      let totalBrightness = 0;
+      let pixelCount = 0;
+      
+      // Her 10 piksel başına bir örnekleme al (performans için)
+      for(let i = 0; i < data.length; i += 40){ // 4 byte * 10 piksel
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        totalBrightness += (r + g + b) / 3;
+        pixelCount++;
       }
       
-      /* OCR.space başarısız - Tesseract'a geç */
-      console.log('OCR.space başarısız, Tesseract kullanılıyor...');
+      const avgBrightness = totalBrightness / pixelCount;
+      
+      // Çok açık (beyaz) veya çok koyu (siyah) görsel - muhtemelen boş
+      if(avgBrightness > 250 || avgBrightness < 5){
+        console.warn('Görsel çok açık veya koyu (avg:', avgBrightness.toFixed(0), ') - OCR.space atlanıyor');
+        toast('Görsel kalitesi düşük - Alternatif motor kullanılıyor', 'warn');
+        // Direkt Tesseract'a git
+      } else {
+        /* OCR.space API ile dene (önce bu, daha hızlı ve doğru) */
+        const ocrSpaceResult = await this.readWithOcrSpace(raw);
+        
+        if(ocrSpaceResult && ocrSpaceResult.plate){
+          console.log('OCR.space başarılı:', ocrSpaceResult.plate);
+          
+          const cands = plateCandidates(ocrSpaceResult.plate, 90);
+          console.log(`OCR.space sonucu: ${cands.length} aday`, cands);
+          
+          if(cands.length > 0){
+            this.prog(100);
+            setTimeout(() => { this.progOff(); }, 300);
+            this.busy = false;
+            this.scanning(false);
+            this.rawText = ocrSpaceResult.plate;
+            this.deliver(cands, [ocrSpaceResult.plate], []);
+            return;
+          }
+        }
+        
+        /* OCR.space başarısız - Tesseract'a geç */
+        console.log('OCR.space başarısız, Tesseract kullanılıyor...');
+      }
+      
       this.status('Alternatif motor kullanılıyor...');
       
       /* Tesseract worker hazırla */
@@ -4225,10 +4253,8 @@ const Cam = {
       toast('Okuma başarısız', 'err');
       
       setTimeout(() => {
-        if(confirm('Plaka okunamadı. Elle girmek ister misiniz?')){
-          this.close();
-          plateTypeDialog(this.ctxMode || 'scan');
-        }
+        toast('Plaka okunamadı - Elle girmek için kalem butonuna tıklayın', 'warn');
+        // Otomatik açma yerine kullanıcıya bilgi ver
       }, 500);
     }
   },
@@ -4654,9 +4680,7 @@ const Cam = {
       
       /* Elle girme modalını aç */
       setTimeout(() => {
-        if(confirm('Plaka okunamadı. Elle girmek ister misiniz?')){
-          plateTypeDialog(this.ctxMode || 'scan');
-        }
+        toast('Plaka okunamadı - Sağ alttaki kalem butonuna tıklayın', 'warn');
       }, 500);
       
       sfx.err();
@@ -6129,18 +6153,7 @@ $('#mapsSave').onclick = async () => {
       sfx.ok();
       
       /* Koordinatların kaydedildiğini ve kullanılacağını onaylama mesajı */
-      setTimeout(() => {
-        alert('✓ GPS Koordinatları Kaydedildi\n\n' +
-              'Blok: ' + currentMapSite.name + '\n' +
-              'Enlem: ' + lat.toFixed(6) + '\n' +
-              'Boylam: ' + lng.toFixed(6) + '\n\n' +
-              'Bu koordinatlar:\n' +
-              '• QR kodlara yazılacak\n' +
-              '• Kuryeler bu koordinatlara gidecek\n' +
-              '• Harita paylaşımlarında kullanılacak\n' +
-              '• Veri yedeklemelerine dahil edilecek\n\n' +
-              'Koordinatların doğruluğundan emin olun!');
-      }, 600);
+      toast('✓ GPS Koordinatları Kaydedildi · ' + currentMapSite.name, 'ok');
       
       return true;
     }
@@ -6531,7 +6544,7 @@ function checkEnv(){
       b.className='banner err'; b.style.display='flex';
       $('#bannerText').innerHTML='<b>⚠ DİKKAT:</b> IndexedDB açılamadı — Kayıtlar tarayıcı belleğinde (localStorage) tutuluyor. Çok fazla kayıt eklerseniz sorun çıkabilir!';
       b.onclick=()=>{ 
-        alert('IndexedDB veritabanı açılamadı. Olası nedenler:\n\n• Tarayıcı gizli modda (private/incognito)\n• Tarayıcı ayarlarında IndexedDB kapalı\n• Disk alanı dolmuş\n• Tarayıcı eski sürüm\n\nŞu an kayıtlar localStorage\'da tutuluyor ama bu sınırlı (max ~5MB). Çok kayıt eklerseniz veri kaybı olabilir. Normal modda açın veya farklı tarayıcı deneyin.'); 
+        toast('IndexedDB veritabanı açılamadı. Kayıtlar localStorage\'da tutuluyor (max ~5MB)', 'warn');
       };
     }, 1800);
   }
