@@ -77,21 +77,13 @@ section.active{ display:block; }
 
 .accordion{ 
   display:grid; 
-  grid-template-columns:repeat(3, 1fr); 
+  grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); 
   gap:10px; 
 }
 
-/* Tablet ve mobil için responsive */
-@media (max-width: 768px){ 
-  .accordion{ 
-    grid-template-columns:repeat(2, 1fr); 
-  } 
-}
-
-@media (max-width: 400px){ 
-  .accordion{ 
-    grid-template-columns:1fr; 
-  } 
+/* Açık item tüm genişliği kaplasın */
+.acc-item.open{ 
+  grid-column:1 / -1;
 }
 
 .acc-item{ 
@@ -99,7 +91,8 @@ section.active{ display:block; }
   border:1px solid var(--line); 
   border-radius:14px; 
   overflow:hidden; 
-  transition:border-color .2s, transform .15s; 
+  transition:border-color .2s, transform .15s;
+  min-width:0; /* Grid overflow fix */
 }
 
 .acc-item:hover{ 
