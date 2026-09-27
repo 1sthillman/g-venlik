@@ -4030,6 +4030,9 @@ const Cam = {
         console.log(`Kırpıldı: ${cropped.width}x${cropped.height}`);
       }
       
+      /* AKILLI SIKIŞTIRMA - OCR için optimize et */
+      finalCanvas = await this.compressCanvas(finalCanvas, 1920, 500000);
+      
       /* Başarılı - Feedback */
       sfx.shutter(); 
       buzz(20);
@@ -4228,6 +4231,78 @@ const Cam = {
         }
       }, 500);
     }
+  },
+  
+  /* ========== AKILLI GÖRSEL SIKIŞTIRMA ========== */
+  /* Canvas'ı sıkıştırarak hem OCR doğruluğunu artırır hem de bant genişliği tasarrufu sağlar */
+  async compressCanvas(canvas, targetMaxSize = 1920, targetFileSize = 500000){
+    const ctx = canvas.getContext('2d');
+    if(!ctx) return canvas;
+    
+    const originalW = canvas.width;
+    const originalH = canvas.height;
+    
+    /* 1. BOYUT SIKIŞTIRILMASI - Çok büyük görselleri küçült */
+    let newW = originalW;
+    let newH = originalH;
+    
+    if(originalW > targetMaxSize || originalH > targetMaxSize){
+      const scale = Math.min(targetMaxSize / originalW, targetMaxSize / originalH);
+      newW = Math.round(originalW * scale);
+      newH = Math.round(originalH * scale);
+      
+      const resized = document.createElement('canvas');
+      resized.width = newW;
+      resized.height = newH;
+      const resizedCtx = resized.getContext('2d');
+      
+      /* Yüksek kaliteli resize */
+      resizedCtx.imageSmoothingEnabled = true;
+      resizedCtx.imageSmoothingQuality = 'high';
+      resizedCtx.drawImage(canvas, 0, 0, newW, newH);
+      
+      console.log(`Görsel resize: ${originalW}x${originalH} → ${newW}x${newH}`);
+      canvas = resized;
+    }
+    
+    /* 2. KALİTE SIKIŞTIRILMASI - Dosya boyutunu optimize et */
+    let quality = 0.92;
+    let blob = await new Promise(resolve => {
+      canvas.toBlob(resolve, 'image/jpeg', quality);
+    });
+    
+    /* Hedef dosya boyutuna ulaşana kadar kaliteyi düşür */
+    let iterations = 0;
+    while(blob.size > targetFileSize && quality > 0.5 && iterations < 8){
+      quality -= 0.08;
+      blob = await new Promise(resolve => {
+        canvas.toBlob(resolve, 'image/jpeg', quality);
+      });
+      iterations++;
+    }
+    
+    /* Son sıkıştırma sonucu */
+    const finalSize = (blob.size / 1024).toFixed(0);
+    const finalQuality = (quality * 100).toFixed(0);
+    console.log(`Görsel sıkıştırma: ${finalSize}KB (kalite: ${finalQuality}%)`);
+    
+    /* Canvas'ı blob'dan geri yükle - sıkıştırılmış versiyonu kullan */
+    const compressedImg = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = URL.createObjectURL(blob);
+    });
+    
+    const compressed = document.createElement('canvas');
+    compressed.width = canvas.width;
+    compressed.height = canvas.height;
+    const compressedCtx = compressed.getContext('2d');
+    compressedCtx.drawImage(compressedImg, 0, 0);
+    
+    URL.revokeObjectURL(compressedImg.src);
+    
+    return compressed;
   },
   
   /* ---- OCR.space API ile okuma (TRIPLE KEY - 75,000/ay) ---- */
@@ -4862,8 +4937,8 @@ $('#camFile').addEventListener('change', e=>{
   const f=e.target.files && e.target.files[0]; if(!f) return;
   
   // Dosya boyut kontrolü - çok büyük dosyaları reddet
-  if(f.size > 10 * 1024 * 1024){
-    toast('Fotoğraf çok büyük (max 10MB)', 'err');
+  if(f.size > 20 * 1024 * 1024){
+    toast('Fotoğraf çok büyük (max 20MB)', 'err');
     e.target.value = '';
     return;
   }
@@ -4873,30 +4948,31 @@ $('#camFile').addEventListener('change', e=>{
     try{
       const c=document.createElement('canvas');
       
-      // Maksimum boyut sınırı - çok büyük fotoğrafları resize et
-      const maxDim = 3840; // 4K max
+      // Orijinal boyutta yükle
       let w = img.naturalWidth || img.width;
       let h = img.naturalHeight || img.height;
       
-      if(w > maxDim || h > maxDim){
-        const scale = Math.min(maxDim / w, maxDim / h);
-        w = Math.round(w * scale);
-        h = Math.round(h * scale);
-        console.log(`Fotoğraf resize: ${img.naturalWidth}x${img.naturalHeight} → ${w}x${h}`);
-      }
-      
       c.width = w;
       c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, w, h);
       
       URL.revokeObjectURL(url);
+      
+      console.log(`Galeri fotoğrafı yüklendi: ${w}x${h}`);
+      
+      /* AKILLI SIKIŞTIRMA - Otomatik resize ve kalite optimizasyonu */
+      const compressed = await Cam.compressCanvas(c, 2560, 800000);
+      
       Cam.stopStream(); 
       Cam.reset(); 
       Cam.show();
       Cam.status('Galeriden fotoğraf okunuyor…');
       
-      // Aynı okuma sistemi - OCR.space crop dahil
-      await Cam.read(c);
+      // Sıkıştırılmış versiyonu oku
+      await Cam.read(compressed);
     }catch(err){
       console.error('Galeri fotoğrafı işlenirken hata:', err);
       toast('Fotoğraf işlenemedi', 'err');
