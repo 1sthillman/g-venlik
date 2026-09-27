@@ -4245,14 +4245,25 @@ const Cam = {
     return []; // Boş array - OCR çalışmayacak, Tesseract devreye girecek
   },
   currentKeyIndex: 0,
+  keyFailCount: {}, // Her key için başarısızlık sayacı
+  apiRequestInProgress: false, // Race condition önleme
   
   async readWithOcrSpace(canvas, retryCount = 0){
+    /* ==================== RACE CONDITION KONTROLÜ ==================== */
+    if(this.apiRequestInProgress){
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if(this.apiRequestInProgress) {
+        console.warn('API isteği zaten devam ediyor, atlanıyor');
+        return null;
+      }
+    }
+    this.apiRequestInProgress = true;
+    
     try{
       this.status('Plaka bölgesi tespit ediliyor...');
       this.prog(3);
       
       /* ========== AKILLI PLAKA BÖLGE TESPİTİ ========== */
-      /* Canvas'ın sadece PLAKA bölgesini kırp - gereksiz çerçeve/logo/TR yazısını at */
       const croppedCanvas = this.smartCropPlateRegion(canvas);
       
       this.status('OCR.space ile okunuyor...');
@@ -4272,15 +4283,44 @@ const Cam = {
         });
       }
       
-      console.log(`OCR.space: ${(blob.size/1024).toFixed(0)}KB, kalite=${quality.toFixed(2)}, key=${this.currentKeyIndex+1}`);
+      const totalKeys = this.ocrApiKeys.length;
+      if(totalKeys === 0){
+        console.warn('API key yok, Tesseract kullanılacak');
+        return null;
+      }
+      
+      console.log(`OCR.space: ${(blob.size/1024).toFixed(0)}KB, kalite=${quality.toFixed(2)}, key=${this.currentKeyIndex+1}/${totalKeys}`);
+      
+      /* ==================== AKILLI KEY SEÇME ==================== */
+      // Başarısız key'leri atla (son 5dk içinde 3+ hata varsa)
+      let attemptedKeys = 0;
+      let startKeyIndex = this.currentKeyIndex;
+      
+      while(attemptedKeys < totalKeys){
+        const keyFailures = this.keyFailCount[this.currentKeyIndex] || 0;
+        if(keyFailures < 3){
+          break; // Bu key kullanılabilir
+        }
+        // Bu key çok fazla hata vermiş, bir sonrakini dene
+        this.currentKeyIndex = (this.currentKeyIndex + 1) % totalKeys;
+        attemptedKeys++;
+        
+        if(attemptedKeys >= totalKeys){
+          // Tüm key'ler başarısız - sayaçları sıfırla ve baştan başla
+          console.warn('Tüm key\'ler geçici olarak devre dışı, sayaçlar sıfırlanıyor');
+          this.keyFailCount = {};
+          this.currentKeyIndex = 0;
+          break;
+        }
+      }
       
       const formData = new FormData();
       formData.append('file', blob, 'plaka.jpg');
-      formData.append('language', 'eng'); // Türkçe plakalar İngilizce karakterlerle
+      formData.append('language', 'eng');
       formData.append('isOverlayRequired', 'false');
-      formData.append('detectOrientation', 'true'); // Eğik plakaları düzelt
-      formData.append('scale', 'true'); // Düşük çözünürlük iyileştirme - KRİTİK
-      formData.append('OCREngine', '2'); // Engine 2: Plaka, işaret, meme'ler için en iyi
+      formData.append('detectOrientation', 'true');
+      formData.append('scale', 'true');
+      formData.append('OCREngine', '2');
       
       const response = await fetch('https://api.ocr.space/parse/image', {
         method: 'POST',
@@ -4290,15 +4330,41 @@ const Cam = {
         body: formData
       });
       
-      /* Rate limit (429) - diğer key'e geç */
-      if(response.status === 429 && retryCount < this.ocrApiKeys.length){
-        console.warn(`Key ${this.currentKeyIndex+1} limit aşıldı, Key ${((this.currentKeyIndex+1)%this.ocrApiKeys.length)+1} deneniyor...`);
-        this.currentKeyIndex = (this.currentKeyIndex + 1) % this.ocrApiKeys.length;
+      /* ==================== HATA YÖNETİMİ ==================== */
+      /* Rate limit (429) - Tüm key'leri dene */
+      if(response.status === 429){
+        console.warn(`Key ${this.currentKeyIndex+1} rate limit (429)`);
+        this.keyFailCount[this.currentKeyIndex] = (this.keyFailCount[this.currentKeyIndex] || 0) + 1;
+        
+        // Bir sonraki key'e geç
+        const nextKeyIndex = (this.currentKeyIndex + 1) % totalKeys;
+        
+        // Tüm key'ler denendi mi?
+        if(retryCount >= totalKeys - 1){
+          console.error('Tüm API key\'leri rate limit - Tesseract\'a geçiliyor');
+          this.apiRequestInProgress = false;
+          return null;
+        }
+        
+        this.currentKeyIndex = nextKeyIndex;
+        this.apiRequestInProgress = false;
+        console.log(`Yeni key deneniyor: ${this.currentKeyIndex+1}/${totalKeys}`);
         return await this.readWithOcrSpace(canvas, retryCount + 1);
       }
       
+      /* Diğer HTTP hataları */
       if(!response.ok){
         console.warn(`OCR.space HTTP ${response.status}`);
+        this.keyFailCount[this.currentKeyIndex] = (this.keyFailCount[this.currentKeyIndex] || 0) + 1;
+        
+        // Network/server hatası - başka key dene
+        if(retryCount < totalKeys - 1){
+          this.currentKeyIndex = (this.currentKeyIndex + 1) % totalKeys;
+          this.apiRequestInProgress = false;
+          return await this.readWithOcrSpace(canvas, retryCount + 1);
+        }
+        
+        this.apiRequestInProgress = false;
         return null;
       }
       
@@ -4307,6 +4373,9 @@ const Cam = {
       if(data.IsErroredOnProcessing === false && data.ParsedResults && data.ParsedResults.length > 0){
         let rawText = data.ParsedResults[0].ParsedText || '';
         let confidence = data.ParsedResults[0].Confidence || 0;
+        
+        /* BAŞARILI - Key sayacını sıfırla */
+        this.keyFailCount[this.currentKeyIndex] = 0;
         
         /* ========== AKILLI FİLTRELEME ========== */
         let cleaned = this.filterPlateText(rawText);
@@ -4317,23 +4386,31 @@ const Cam = {
         /* Filtrelemeden sonra çok kısa kaldıysa (< 5 karakter) reject et */
         if(cleaned.length < 5){
           console.warn('Filtreleme sonrası çok kısa, reddedildi');
+          this.apiRequestInProgress = false;
           return null;
         }
         
+        this.apiRequestInProgress = false;
         return { plate: cleaned, raw: rawText, confidence };
       } else {
-        console.warn('OCR.space hata:', data.ErrorMessage || data.ErrorDetails);
+        console.warn('OCR.space parse hatası:', data.ErrorMessage || data.ErrorDetails);
+        this.apiRequestInProgress = false;
         return null;
       }
       
     }catch(e){
-      /* Network hatası - backup key'i dene (1 kez) */
-      if(retryCount === 0 && this.ocrApiKeys.length > 1){
-        console.warn('Network hatası, backup key deneniyor...', e.message);
+      /* Network hatası - backup key'i dene */
+      console.error('OCR.space network hatası:', e.message);
+      this.keyFailCount[this.currentKeyIndex] = (this.keyFailCount[this.currentKeyIndex] || 0) + 1;
+      
+      if(retryCount < this.ocrApiKeys.length - 1){
         this.currentKeyIndex = (this.currentKeyIndex + 1) % this.ocrApiKeys.length;
+        this.apiRequestInProgress = false;
+        console.log(`Network hatası, Key ${this.currentKeyIndex+1} deneniyor`);
         return await this.readWithOcrSpace(canvas, retryCount + 1);
       }
-      console.error('OCR.space fatal hata:', e);
+      
+      this.apiRequestInProgress = false;
       return null;
     }
   },
@@ -4783,18 +4860,55 @@ $('#zoomSlider').oninput=async (e)=>{
 
 $('#camFile').addEventListener('change', e=>{
   const f=e.target.files && e.target.files[0]; if(!f) return;
+  
+  // Dosya boyut kontrolü - çok büyük dosyaları reddet
+  if(f.size > 10 * 1024 * 1024){
+    toast('Fotoğraf çok büyük (max 10MB)', 'err');
+    e.target.value = '';
+    return;
+  }
+  
   const img=new Image(), url=URL.createObjectURL(f);
   img.onload=async ()=>{
-    const c=document.createElement('canvas');
-    c.width=img.naturalWidth||1200; c.height=img.naturalHeight||900;
-    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-    URL.revokeObjectURL(url);
-    Cam.stopStream(); Cam.reset(); Cam.show();
-    Cam.status('Fotoğraf okunuyor…');
-    await Cam.read(c);
+    try{
+      const c=document.createElement('canvas');
+      
+      // Maksimum boyut sınırı - çok büyük fotoğrafları resize et
+      const maxDim = 3840; // 4K max
+      let w = img.naturalWidth || img.width;
+      let h = img.naturalHeight || img.height;
+      
+      if(w > maxDim || h > maxDim){
+        const scale = Math.min(maxDim / w, maxDim / h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+        console.log(`Fotoğraf resize: ${img.naturalWidth}x${img.naturalHeight} → ${w}x${h}`);
+      }
+      
+      c.width = w;
+      c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      
+      URL.revokeObjectURL(url);
+      Cam.stopStream(); 
+      Cam.reset(); 
+      Cam.show();
+      Cam.status('Galeriden fotoğraf okunuyor…');
+      
+      // Aynı okuma sistemi - OCR.space crop dahil
+      await Cam.read(c);
+    }catch(err){
+      console.error('Galeri fotoğrafı işlenirken hata:', err);
+      toast('Fotoğraf işlenemedi', 'err');
+      URL.revokeObjectURL(url);
+    }
   };
-  img.onerror=()=>{ URL.revokeObjectURL(url); toast('Fotoğraf açılamadı','err'); };
-  img.src=url; e.target.value='';
+  img.onerror=()=>{ 
+    URL.revokeObjectURL(url); 
+    toast('Fotoğraf açılamadı - Desteklenen format: JPG, PNG','err'); 
+  };
+  img.src=url; 
+  e.target.value='';
 });
 $('#camUse').onclick=async ()=>{
   const r=Cam.result||{};
