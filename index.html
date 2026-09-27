@@ -77,8 +77,9 @@ section.active{ display:block; }
 
 .accordion{ 
   display:grid; 
-  grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); 
-  gap:10px; 
+  grid-template-columns:repeat(auto-fit, minmax(min(100%, 140px), 1fr)); 
+  gap:10px;
+  width:100%;
 }
 
 /* Açık item tüm genişliği kaplasın */
@@ -92,7 +93,9 @@ section.active{ display:block; }
   border-radius:14px; 
   overflow:hidden; 
   transition:border-color .2s, transform .15s;
-  min-width:0; /* Grid overflow fix */
+  min-width:0;
+  max-width:100%;
+}
 }
 
 .acc-item:hover{ 
@@ -7205,7 +7208,12 @@ function setTab(name){
   currentTabName=name; stopSpeak();
   if(name==='log') renderLog();
   if(name==='plate'){ renderCouriers(); renderLastPlates(); }
-  if(name==='search') renderResults();
+  if(name==='search'){ 
+    /* Tüm açık accordionları kapat - grid layout düzgün çalışsın */
+    const box=$('#browseList');
+    if(box) box.querySelectorAll('.acc-item.open').forEach(i => i.classList.remove('open'));
+    renderResults(); 
+  }
   if(name==='set') paintPrefs();
   window.scrollTo(0,0);
 }
