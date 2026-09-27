@@ -2158,7 +2158,25 @@ const BASE_SITES = [
     ]
   }
 
-].map(s=>{ s.base=true; s.units=s.units.map(u=>typeof u==='string'?{c:u,entry:'',lat:null,lng:null,qr:''}:Object.assign({entry:'',lat:null,lng:null,qr:''},u)); return s; });
+].map(s=>{ 
+  s.base=true; 
+  s.units=s.units.map(u=>{
+    if(typeof u==='string'){
+      // String ise basit objeye çevir
+      return {c:u, entry:'', lat:null, lng:null, qr:''};
+    } else {
+      // Obje ise mevcut değerleri KORU, sadece eksikleri ekle
+      return {
+        c: u.c,
+        entry: u.entry || '',
+        lat: u.lat || null,
+        lng: u.lng || null,
+        qr: u.qr || ''
+      };
+    }
+  }); 
+  return s; 
+});
 
 let NOTES = load('ck_notes', {});
 function saveNotes(){ localStorage.setItem('ck_notes', JSON.stringify(NOTES)); }
@@ -2558,33 +2576,43 @@ function paintUnitHistory(){
 }
 }
 function mapsUrl(site, code){
+  console.log('🔍 mapsUrl çağrıldı:', {site: site.name, code: code});
+  
   /* 1. ÖNCELİK: Unit bazında GPS koordinatları (her dairenin kendi koordinatı) */
   if(code && site.units) {
     const unit = site.units.find(u => u.c === code);
+    console.log('📍 Unit bulundu:', unit);
+    
     if(unit && unit.lat && unit.lng) {
-      /* Unit'in kendi GPS koordinatı varsa SADECE koordinatı kullan */
-      return 'https://maps.google.com/?q=' + unit.lat + ',' + unit.lng;
+      const url = 'https://maps.google.com/?q=' + unit.lat + ',' + unit.lng;
+      console.log('✅ Unit GPS kullanılıyor:', url);
+      return url;
     }
-    /* Unit'in QR linki varsa direkt onu kullan */
+    
     if(unit && unit.qr) {
+      console.log('✅ Unit QR kullanılıyor:', unit.qr);
       return unit.qr;
     }
+    
+    console.warn('⚠️ Unit koordinat yok:', {lat: unit?.lat, lng: unit?.lng, qr: unit?.qr});
   }
   
   /* 2. Override'dan GPS kontrolü */
   const OVR = siteOvr();
   const o = OVR[site.id] || {};
   if(o.gpsLat && o.gpsLng) {
+    console.log('✅ Override GPS kullanılıyor');
     return 'https://maps.google.com/?q=' + o.gpsLat + ',' + o.gpsLng;
   }
   
   /* 3. Site seviyesinde koordinat (eski format, geriye uyumluluk) */
   if(site.lat && site.lng) {
+    console.log('✅ Site GPS kullanılıyor');
     return 'https://maps.google.com/?q=' + site.lat + ',' + site.lng;
   }
   
-  /* 4. FALLBACK: Koordinat yoksa sadece koordinatları kullan (site adı YOK) */
-  /* Bu satıra hiç gelmemeli çünkü tüm unitlerde koordinat var */
+  /* 4. FALLBACK: Koordinat yoksa varsayılan */
+  console.error('❌ FALLBACK KULLANILIYOR - Koordinat bulunamadı!');
   return 'https://maps.google.com/?q=41.023,29.198';
 }
 function openMaps(site, code){
