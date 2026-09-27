@@ -4582,24 +4582,22 @@ const Cam = {
     }
     
     /* ==================== FLAŞ AKTİVASYONU ==================== */
+    /* MOBİL FIX: Sadece kullanıcı manuel açtıysa flaşı kullan */
     let flashWasOn = false;
-    if(this.torchAvailable && this.stream){
+    let flashApplied = false;
+    
+    if(this.torchAvailable && this.torchOn && this.stream){
       const tracks = this.stream.getVideoTracks();
       if(tracks.length > 0){
         const track = tracks[0];
         try{
-          // Eğer flaş zaten açıksa not al
-          flashWasOn = this.torchOn;
-          
-          // Flaş kapalıysa çekim için aç
-          if(!this.torchOn){
-            await track.applyConstraints({ advanced: [{ torch: true }] });
-            console.log('Flaş çekim için açıldı');
-            // Kısa bir bekleme - flaşın etki etmesi için
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
+          flashWasOn = true;
+          flashApplied = true;
+          console.log('✅ Flaş zaten açık - çekim yapılıyor');
+          // Flaşın etki etmesi için kısa bekleme
+          await new Promise(resolve => setTimeout(resolve, 150));
         }catch(e){
-          console.warn('Flaş açılamadı:', e);
+          console.warn('⚠️ Flaş kontrol hatası:', e);
         }
       }
     }
@@ -4623,22 +4621,9 @@ const Cam = {
       }
       
       ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-      console.log(`Kare yakalandı: ${canvas.width}x${canvas.height}`);
+      console.log(`📸 Kare yakalandı: ${canvas.width}x${canvas.height}`);
       
-      /* FLAŞ KAPAT (eğer çekim için açtıysak) */
-      if(this.torchAvailable && !flashWasOn && this.stream){
-        const tracks = this.stream.getVideoTracks();
-        if(tracks.length > 0){
-          const track = tracks[0];
-          try{
-            await track.applyConstraints({ advanced: [{ torch: false }] });
-            console.log('Flaş çekim sonrası kapatıldı');
-          }catch(e){
-            console.warn('Flaş kapatılamadı:', e);
-          }
-        }
-      }
-      
+      /* MOBİL FIX: Flaş otomatik kapatmayı kaldırdık - manuel kontrol */
       /* KULLANICI CROP ALANI - Sadece plaka bölgesini al */
       const cropRect = this.getCropRect(canvas.width, canvas.height);
       let finalCanvas = canvas;
@@ -4646,11 +4631,17 @@ const Cam = {
       if(cropRect && cropRect[2] > 0 && cropRect[3] > 0){
         /* Crop alanını kırp */
         const cropped = document.createElement('canvas');
-        const targetW = 480; // Sabit genişlik
+        
+        /* MOBİL FIX: Daha yüksek çözünürlük - 640px genişlik */
+        const targetW = 640; // 480'den 640'a çıkarıldı
         const scale = targetW / cropRect[2];
         cropped.width = targetW;
         cropped.height = Math.round(cropRect[3] * scale);
         const croppedCtx = cropped.getContext('2d');
+        
+        /* Yüksek kalite çizim */
+        croppedCtx.imageSmoothingEnabled = true;
+        croppedCtx.imageSmoothingQuality = 'high';
         
         croppedCtx.drawImage(
           canvas,
@@ -4659,11 +4650,12 @@ const Cam = {
         );
         
         finalCanvas = cropped;
-        console.log(`Kırpıldı: ${cropped.width}x${cropped.height}`);
+        console.log(`✂️ Kırpıldı: ${cropped.width}x${cropped.height}`);
       }
       
       /* AKILLI SIKIŞTIRMA - OCR için optimize et */
-      finalCanvas = await this.compressCanvas(finalCanvas, 1920, 500000);
+      /* MOBİL FIX: Daha yüksek kalite limiti */
+      finalCanvas = await this.compressCanvas(finalCanvas, 2048, 800000); // 1920→2048, 500KB→800KB
       
       /* Başarılı - Feedback */
       sfx.shutter(); 
