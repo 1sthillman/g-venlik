@@ -1517,11 +1517,6 @@ body.cam-on{ overflow:hidden; }
           <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
         </svg>
       </button>
-      <button class="cam-flip" id="camSwitch" type="button" title="Kamera Çevir">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-        </svg>
-      </button>
     </div>
     
     <div class="cam-frame">
@@ -4673,7 +4668,6 @@ $('#camShot').onclick=()=>{
   Cam.shoot(); 
 };
 $('#camClose').onclick=()=>Cam.close();
-$('#camSwitch').onclick=()=>{ Cam.facing = Cam.facing==='environment'?'user':'environment'; Cam.start(); };
 $('#camType').onclick=()=>{ const m=(Cam.ctx&&Cam.ctx.mode)||Cam.ctxMode; Cam.close(); plateTypeDialog(m); };
 $('#camAgain').onclick=()=>{ Cam.reset(); Cam.status('Plakayı çerçeveye alın'); };
 $('#camGallery').onclick=()=>{ $('#camFile').click(); };
