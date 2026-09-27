@@ -283,20 +283,51 @@ body.cam-on{ overflow:hidden; }
 .cam-view .ph{ color:rgba(255,255,255,.6); font-size:13px; text-align:center; padding:24px; line-height:1.65; max-width:34ch; }
 .cam-view .ph b{ color:var(--amber); }
 
-/* Flaş butonu - Sol üst köşe */
-.cam-torch{
-  position:absolute; top:12px; left:12px; z-index:10;
-  width:44px; height:44px; border-radius:13px;
-  background:rgba(18,26,25,.75); border:1px solid rgba(255,255,255,.18);
-  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-  display:none; align-items:center; justify-content:center;
-  cursor:pointer; transition:all .2s;
-  box-shadow:0 4px 16px -6px rgba(0,0,0,.7);
+/* ===== MODERN TOP CONTROLS (Sağ üst) ===== */
+.cam-top-controls{
+  position:absolute; top:16px; right:16px; z-index:10;
+  display:flex; gap:10px; align-items:center;
 }
-.cam-torch:active{ transform:scale(.92); }
-.cam-torch.on{ background:rgba(255,169,77,.4); border-color:var(--amber); }
-.cam-torch.on svg{ color:var(--amber); }
-.cam-torch svg{ width:20px; height:20px; color:rgba(255,255,255,.85); transition:color .2s; }
+
+/* Flash butonu */
+.cam-torch{
+  width:48px; height:48px; border-radius:50%;
+  background:rgba(0,0,0,.7); border:1.5px solid rgba(255,255,255,.2);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .25s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+.cam-torch:active{ transform:scale(.9); }
+.cam-torch.on{ 
+  background:rgba(255,169,77,.95); 
+  border-color:rgba(255,200,120,.4);
+  box-shadow:0 4px 24px rgba(255,169,77,.6), 0 0 40px rgba(255,169,77,.4);
+}
+.cam-torch svg{ 
+  width:22px; height:22px; 
+  color:rgba(255,255,255,.9); 
+  transition:all .25s;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
+}
+.cam-torch.on svg{ color:#fff; transform:scale(1.05); }
+
+/* Çevir butonu (kamera değiştir) */
+.cam-flip{
+  width:48px; height:48px; border-radius:50%;
+  background:rgba(0,0,0,.7); border:1.5px solid rgba(255,255,255,.2);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .25s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+.cam-flip:active{ transform:scale(.9) rotate(180deg); }
+.cam-flip svg{ 
+  width:22px; height:22px; 
+  color:rgba(255,255,255,.9); 
+  transition:transform .4s cubic-bezier(.4,0,.2,1);
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
+}
 
 /* nişangâh: köşe braketleri + tarama çizgisi + pinch-zoom ile ayarlanabilir */
 .cam-frame{ position:absolute; inset:0; pointer-events:none; }
@@ -428,20 +459,28 @@ body.cam-on{ overflow:hidden; }
 .cam-warn svg{ width:16px; height:16px; flex-shrink:0; margin-top:1px; color:#ff9f6e; }
 .cam-warn b{ color:#fff; }
 
-/* Carousel buton - Genişlik slider'ın üstünde */
+/* Carousel buton - Modern ve ince */
 .cam-carousel{
-  position:absolute; bottom:170px; left:50%; transform:translateX(-50%);
-  width:44px; height:44px; border-radius:50%;
-  background:rgba(18,26,25,.75); border:1px solid rgba(255,255,255,.2);
-  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  position:absolute; bottom:calc(95px + env(safe-area-inset-bottom,0px)); 
+  left:50%; transform:translateX(-50%);
+  width:40px; height:40px; border-radius:50%;
+  background:rgba(0,0,0,.65); border:1.5px solid rgba(255,255,255,.15);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
   display:flex; align-items:center; justify-content:center;
-  cursor:pointer; transition:all .2s; z-index:10;
-  box-shadow:0 4px 16px -6px rgba(0,0,0,.7);
+  cursor:pointer; transition:all .25s cubic-bezier(.4,0,.2,1); z-index:10;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
 }
-.cam-carousel:active{ transform:translateX(-50%) scale(.92); }
-.cam-carousel.active{ background:rgba(255,169,77,.35); border-color:var(--amber); }
+.cam-carousel:active{ transform:translateX(-50%) scale(.9); }
+.cam-carousel.active{ 
+  background:rgba(255,169,77,.2); 
+  border-color:rgba(255,169,77,.4);
+}
 .cam-carousel.active svg{ color:var(--amber); transform:rotate(180deg); }
-.cam-carousel svg{ width:20px; height:20px; transition:transform .3s; color:rgba(255,255,255,.85); }
+.cam-carousel svg{ 
+  width:18px; height:18px; 
+  transition:all .3s cubic-bezier(.4,0,.2,1); 
+  color:rgba(255,255,255,.85);
+}
 
 /* Slider panel */
 .cam-panel{
@@ -488,35 +527,79 @@ body.cam-on{ overflow:hidden; }
   box-shadow:0 2px 8px rgba(255,169,77,.5);
 }
 
-/* alt çubuk */
+/* ===== MODERN BOTTOM CONTROLS ===== */
+/* Bottom bar - Minimalist */
 .cam-bar{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  flex-shrink:0; padding:14px 4px 0;
+  display:flex; align-items:center; justify-content:center; gap:0;
+  flex-shrink:0; padding:20px 16px calc(8px + env(safe-area-inset-bottom,0px));
+  position:relative;
 }
-.cam-side{ display:flex; flex-direction:column; align-items:center; gap:5px; min-width:60px; flex:0 0 auto;
-  background:none; border:0; padding:0; color:rgba(255,255,255,.85); cursor:pointer;
-  font-size:10.5px; letter-spacing:.03em; font-weight:600; -webkit-appearance:none; appearance:none; }
-.cam-side span{ display:block; }
-.cam-side .cam-glass{ width:50px; height:50px; flex:0 0 50px; border-radius:15px; }
-.cam-side .cam-glass svg{ width:20px; height:20px; }
-.cam-side[disabled]{ opacity:.3; pointer-events:none; }
-.cam-side:active .cam-glass{ transform:scale(.92); }
 
+/* Sol: Galeri butonu */
+.cam-gallery-btn{
+  position:absolute; left:24px; bottom:calc(28px + env(safe-area-inset-bottom,0px));
+  width:52px; height:52px; border-radius:50%;
+  background:rgba(0,0,0,.65); border:1.5px solid rgba(255,255,255,.15);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .25s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+.cam-gallery-btn:active{ transform:scale(.9); }
+.cam-gallery-btn svg{ 
+  width:24px; height:24px; 
+  color:rgba(255,255,255,.9);
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
+}
+
+/* Sağ: Yazarak gir butonu */
+.cam-type-btn{
+  position:absolute; right:24px; bottom:calc(28px + env(safe-area-inset-bottom,0px));
+  width:52px; height:52px; border-radius:50%;
+  background:rgba(0,0,0,.65); border:1.5px solid rgba(255,255,255,.15);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .25s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+.cam-type-btn:active{ transform:scale(.9); }
+.cam-type-btn svg{ 
+  width:24px; height:24px; 
+  color:rgba(255,255,255,.9);
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
+}
+
+/* Merkez: Deklanşör - DAHA BÜYÜK VE ETKİLEYİCİ *//* Merkez: Deklanşör - DAHA BÜYÜK VE ETKİLEYİCİ */
 .shutter{
   -webkit-appearance:none; appearance:none; border:0; margin:0; padding:0; cursor:pointer; background:none;
-  width:82px; height:82px; flex:0 0 82px; border-radius:50%;
+  width:78px; height:78px; flex:0 0 78px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  background:conic-gradient(from 210deg,#fff,#d9ece8,#fff);
-  box-shadow:0 0 0 4px rgba(255,255,255,.16), 0 8px 24px -8px rgba(0,0,0,.85);
-  transition:transform .14s;
+  background:linear-gradient(135deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.85) 100%);
+  box-shadow:
+    0 0 0 4px rgba(255,255,255,.2),
+    0 8px 32px -8px rgba(0,0,0,.8),
+    inset 0 1px 0 rgba(255,255,255,.3);
+  transition:all .2s cubic-bezier(.4,0,.2,1);
+  position:relative;
 }
-.shutter i{ display:block; width:68px; height:68px; border-radius:50%; background:#0b1110;
-  box-shadow:inset 0 1px 4px rgba(255,255,255,.24); transition:transform .12s, background .16s, opacity .2s; }
-.shutter:active i{ transform:scale(.84); }
-.shutter[disabled]{ opacity:.45; pointer-events:none; filter:grayscale(0.5); }
-.shutter[disabled] i{ background:rgba(11,17,16,0.6); }
-#camSheet.scanning .shutter i{ background:var(--amber-dim); animation:shutterPulse 1.2s ease-in-out infinite; }
-@keyframes shutterPulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.6; } }
+.shutter::before{
+  content:''; position:absolute; inset:6px;
+  background:rgba(0,0,0,.85); border-radius:50%;
+  transition:all .15s cubic-bezier(.4,0,.2,1);
+}
+.shutter:active{ transform:scale(.88); }
+.shutter:active::before{ transform:scale(.85); background:rgba(0,0,0,.95); }
+.shutter[disabled]{ 
+  opacity:.4; pointer-events:none; 
+  background:linear-gradient(135deg, rgba(150,150,150,.6) 0%, rgba(120,120,120,.5) 100%);
+}
+.shutter[disabled]::before{ background:rgba(40,40,40,.7); }
+#camSheet.scanning .shutter::before{ 
+  background:var(--amber); 
+  animation:shutterPulse 1.2s ease-in-out infinite;
+  box-shadow:0 0 20px rgba(255,169,77,.6);
+}
+@keyframes shutterPulse{ 0%,100%{ opacity:.9; } 50%{ opacity:.6; } }
 
 /* ilerleme çubuğu */
 .prog{ height:3px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,.14); }
@@ -1427,12 +1510,19 @@ body.cam-on{ overflow:hidden; }
     <div class="ph" id="camPh">Kamera başlatılıyor…</div>
     <video id="camVideo" playsinline autoplay muted style="display:none"></video>
     
-    <!-- Flaş butonu -->
-    <button class="cam-torch" id="camTorch" type="button" title="Flaş">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
-      </svg>
-    </button>
+    <!-- Modern Top Controls (Sağ üst) -->
+    <div class="cam-top-controls">
+      <button class="cam-torch" id="camTorch" type="button" title="Flaş">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </button>
+      <button class="cam-flip" id="camSwitch" type="button" title="Kamera Çevir">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
     
     <div class="cam-frame">
       <div class="cam-overlay" id="camOverlay"></div>
@@ -1505,29 +1595,23 @@ body.cam-on{ overflow:hidden; }
   </div>
 
   <div class="cam-bar">
-    <!-- Sol: Yaz butonu -->
-    <button class="cam-side" id="camType" type="button">
-      <span class="cam-glass">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-          <path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"/>
-        </svg>
-      </span>
-      <span>Yaz</span>
+    <!-- Sol: Galeri butonu -->
+    <button class="cam-gallery-btn" id="camGalleryBtn" type="button" title="Galeri">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L9 18"/>
+      </svg>
     </button>
     
-    <!-- Ortada: Fotoğraf çekme butonu -->
-    <button class="shutter" id="camShot" type="button" title="Çek" aria-label="Çek"><i></i></button>
+    <!-- Ortada: Deklanşör butonu -->
+    <button class="shutter" id="camShot" type="button" title="Çek" aria-label="Çek"></button>
     
-    <!-- Sağda: Çevir butonu -->
-    <button class="cam-side" id="camSwitch" type="button">
-      <span class="cam-glass">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 2v6h-6"/>
-          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
-          <path d="M3 22v-6h6"/>
-          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
-        </svg>
+    <!-- Sağda: Manuel giriş butonu -->
+    <button class="cam-type-btn" id="camType" type="button" title="Elle Gir">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"/>
+      </svg>
+    </button>
       </span>
       <span>Çevir</span>
     </button>
@@ -3654,11 +3738,16 @@ const Cam = {
             this.torchAvailable = true;
             this.torchOn = false;
             
-            // Torch butonunu göster
+            // Torch butonunu etkinleştir
             const torchBtn = $('#camTorch');
-            if(torchBtn){
-              torchBtn.style.display = 'flex';
-            }
+            if(torchBtn) torchBtn.style.opacity = '1';
+          } else {
+            this.torchAvailable = false;
+            this.torchOn = false;
+            
+            // Torch butonunu devre dışı görünüme al
+            const torchBtn = $('#camTorch');
+            if(torchBtn) torchBtn.style.opacity = '0.4';
           }
           
           if(Object.keys(constraints).length > 0){
@@ -3712,7 +3801,20 @@ const Cam = {
               try{
                 const zoomValue = cap.zoom.min + (cap.zoom.max - cap.zoom.min) * (currentZoom - 1) / 3;
                 await track.applyConstraints({ advanced: [{ zoom: zoomValue }] });
-              }catch(e){}
+              }catch(e){
+                // Sessiz hata - log'a yazmıyoruz
+              }
+            } else {
+              // Dijital zoom (CSS transform) - Hardware zoom yoksa
+              try{
+                const video = $('#camVideo');
+                if(video){
+                  video.style.transform = `scale(${currentZoom})`;
+                  video.style.transformOrigin = 'center center';
+                }
+              }catch(e){
+                // Sessiz hata
+              }
             }
           }
         }
@@ -3804,9 +3906,12 @@ const Cam = {
     this.torchAvailable = false;
     this.shootInProgress = false;
     
-    /* UI reset */
+    /* UI reset - torch butonunu gizleme, devre dışı yap */
     const torchBtn = $('#camTorch');
-    if(torchBtn) torchBtn.style.display = 'none';
+    if(torchBtn) {
+      torchBtn.classList.remove('on');
+      torchBtn.style.opacity = '0.4';
+    }
   },
   close(){
     this.stopStream();
@@ -4572,6 +4677,7 @@ $('#camSwitch').onclick=()=>{ Cam.facing = Cam.facing==='environment'?'user':'en
 $('#camType').onclick=()=>{ const m=(Cam.ctx&&Cam.ctx.mode)||Cam.ctxMode; Cam.close(); plateTypeDialog(m); };
 $('#camAgain').onclick=()=>{ Cam.reset(); Cam.status('Plakayı çerçeveye alın'); };
 $('#camGallery').onclick=()=>{ $('#camFile').click(); };
+$('#camGalleryBtn').onclick=()=>{ $('#camFile').click(); };
 
 /* Carousel buton - Panel aç/kapa */
 $('#camCarousel').onclick=()=>{
@@ -4590,7 +4696,12 @@ $('#camCarousel').onclick=()=>{
 
 /* Flaş butonu */
 $('#camTorch').onclick=async ()=>{
-  if(!Cam.stream || !Cam.torchAvailable) return;
+  if(!Cam.stream || !Cam.torchAvailable){
+    if(!Cam.torchAvailable){
+      toast('Flaş desteklenmiyor', 'warn');
+    }
+    return;
+  }
   
   const tracks = Cam.stream.getVideoTracks();
   if(tracks.length === 0) return;
@@ -4609,8 +4720,7 @@ $('#camTorch').onclick=async ()=>{
       toast('Flaş kapatıldı', 'ok');
     }
   }catch(e){
-    console.error('Flaş ayarı başarısız:', e);
-    toast('Flaş değiştirilemedi', 'err');
+    toast('Flaş kullanılamıyor', 'err');
   }
 };
 
@@ -4650,38 +4760,32 @@ $('#zoomSlider').oninput=async (e)=>{
   const zoom = (val / 10).toFixed(1);
   $('#zoomValue').textContent = zoom + 'x';
   
-  if(!Cam.stream){
-    console.warn('Kamera stream yok');
-    return;
-  }
+  if(!Cam.stream) return;
   
   const tracks = Cam.stream.getVideoTracks();
-  if(tracks.length === 0){
-    console.warn('Video track yok');
-    return;
-  }
+  if(tracks.length === 0) return;
   
   const track = tracks[0];
   const cap = track.getCapabilities();
   
-  console.log('Zoom capabilities:', cap.zoom);
-  
   if(cap.zoom){
     try{
       const zoomValue = cap.zoom.min + (cap.zoom.max - cap.zoom.min) * (val - 10) / 30;
-      console.log('Zoom değeri:', zoomValue);
       await track.applyConstraints({ advanced: [{ zoom: zoomValue }] });
-      console.log('Zoom uygulandı:', zoomValue);
     }catch(e){
-      console.error('Zoom ayarı başarısız:', e);
-      toast('Zoom desteklenmiyor', 'err');
+      // Sessiz hata - hardware zoom desteklenmiyorsa dijitale geç
+      const video = $('#camVideo');
+      if(video){
+        video.style.transform = `scale(${zoom})`;
+        video.style.transformOrigin = 'center center';
+      }
     }
   }else{
-    console.warn('Zoom özelliği desteklenmiyor');
-    // CSS transform ile alternatif zoom
+    // CSS transform ile dijital zoom
     const video = $('#camVideo');
     if(video){
       video.style.transform = `scale(${zoom})`;
+      video.style.transformOrigin = 'center center';
     }
   }
 };
