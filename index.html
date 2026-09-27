@@ -5402,7 +5402,7 @@ const Cam = {
       /* API İsteği */
       const formData = new FormData();
       formData.append('upload', blob, 'plaka.jpg');
-      formData.append('regions', 'tr'); // Türkiye plaka formatı
+      // regions parametresini kaldırdık - 403 hatası bu yüzden olabilir
       
       const controller = new AbortController();
       const timeout = OCR_CONFIG.timeouts?.plateRecognizer || 25000;
@@ -5442,6 +5442,21 @@ const Cam = {
       
       if(!response.ok){
         console.warn(`Plate Recognizer HTTP ${response.status}`);
+        
+        if(response.status === 403){
+          console.error(`Plate Recognizer Key ${this.currentPlateKeyIndex+1} geçersiz (403 Forbidden)`);
+          
+          /* Başka key dene */
+          if(retryCount < keys.length - 1){
+            this.currentPlateKeyIndex = (this.currentPlateKeyIndex + 1) % keys.length;
+            console.log(`403 hatası, Key ${this.currentPlateKeyIndex+1}/${keys.length} deneniyor`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return await this.readWithPlateRecognizer(canvas, retryCount + 1);
+          }
+          
+          console.error('Tüm Plate Recognizer key\'leri geçersiz');
+          return null;
+        }
         
         if(response.status === 429){
           console.warn(`Plate Recognizer Key ${this.currentPlateKeyIndex+1} limit aşıldı`);
@@ -5536,9 +5551,9 @@ const Cam = {
         this.status('Görüntü yükleniyor...');
       }
       
-      /* API İsteği */
-      const formData = new FormData();
-      formData.append('image', blob, 'plaka.jpg');
+      /* API İsteği - Base64 format */
+      /* Canvas'ı base64'e çevir */
+      const base64Data = croppedCanvas.toDataURL('image/jpeg', quality).split(',')[1];
       
       const controller = new AbortController();
       const timeout = OCR_CONFIG.timeouts?.apiNinjas || 20000;
@@ -5549,9 +5564,12 @@ const Cam = {
         response = await fetch('https://api.api-ninjas.com/v1/imagetotext', {
           method: 'POST',
           headers: {
-            'X-Api-Key': keys[this.currentNinjaKeyIndex]
+            'X-Api-Key': keys[this.currentNinjaKeyIndex],
+            'Content-Type': 'application/json'
           },
-          body: formData,
+          body: JSON.stringify({
+            image: base64Data
+          }),
           signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -5578,6 +5596,20 @@ const Cam = {
       
       if(!response.ok){
         console.warn(`API Ninjas HTTP ${response.status}`);
+        
+        if(response.status === 400){
+          console.error(`API Ninjas Bad Request - Görüntü formatı hatalı olabilir`);
+          
+          /* Başka key dene */
+          if(retryCount < keys.length - 1){
+            this.currentNinjaKeyIndex = (this.currentNinjaKeyIndex + 1) % keys.length;
+            console.log(`400 hatası, Key ${this.currentNinjaKeyIndex+1}/${keys.length} deneniyor`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return await this.readWithApiNinjas(canvas, retryCount + 1);
+          }
+          
+          return null;
+        }
         
         if(response.status === 429){
           console.warn(`API Ninjas Key ${this.currentNinjaKeyIndex+1} limit aşıldı`);
