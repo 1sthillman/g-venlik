@@ -2463,9 +2463,33 @@ function openUnitDetail(site, code){
   if(u && u.entry){ noteBox.style.display='flex'; $('#sheetNoteText').textContent=u.entry; } else noteBox.style.display='none';
   paintUnitHistory();
   const box=$('#qrBox');
-  if(window.QRCode){ box.style.display='block'; $('#qrcode').innerHTML='';
-    try{ new QRCode($('#qrcode'),{ text:mapsUrl(site,code), width:210, height:210, colorDark:'#0A0D0D', colorLight:'#ffffff' }); }catch(e){ box.style.display='none'; } }
-  else { box.style.display='block'; $('#qrcode').innerHTML='<div class="qr-fallback">'+esc(mapsUrl(site,code))+'</div>'; }
+  if(window.QRCode){ 
+    box.style.display='block'; 
+    const qrContainer = $('#qrcode');
+    // QR kodunu TAMAMEN temizle ve yeniden oluştur
+    qrContainer.innerHTML='';
+    // Yeni unique ID ile yeni div oluştur
+    const qrDiv = document.createElement('div');
+    qrDiv.id = 'qr-' + Date.now();
+    qrContainer.appendChild(qrDiv);
+    const url = mapsUrl(site,code);
+    try{ 
+      new QRCode(qrDiv, { 
+        text: url, 
+        width: 210, 
+        height: 210, 
+        colorDark: '#0A0D0D', 
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      }); 
+    } catch(e){ 
+      console.error('QR oluşturma hatası:', e);
+      qrContainer.innerHTML='<div class="qr-fallback">'+esc(url)+'</div>';
+    }
+  } else { 
+    box.style.display='block'; 
+    $('#qrcode').innerHTML='<div class="qr-fallback">'+esc(mapsUrl(site,code))+'</div>'; 
+  }
   showSheet();
 }
 function paintUnitHistory(){
