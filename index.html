@@ -2522,17 +2522,34 @@ function paintUnitHistory(){
 }
 }
 function mapsUrl(site, code){
-  /* Önce GPS koordinatlarını kontrol et (override'dan) */
+  /* 1. ÖNCELİK: Unit bazında GPS koordinatları (her dairenin kendi koordinatı) */
+  if(code && site.units) {
+    const unit = site.units.find(u => u.c === code);
+    if(unit && unit.lat && unit.lng) {
+      /* Unit'in kendi GPS koordinatı varsa SADECE koordinatı kullan */
+      return 'https://maps.google.com/?q=' + unit.lat + ',' + unit.lng;
+    }
+    /* Unit'in QR linki varsa direkt onu kullan */
+    if(unit && unit.qr) {
+      return unit.qr;
+    }
+  }
+  
+  /* 2. Override'dan GPS kontrolü */
   const OVR = siteOvr();
   const o = OVR[site.id] || {};
   if(o.gpsLat && o.gpsLng) {
-    /* GPS koordinatları varsa direkt koordinat linkini ver */
-    return 'https://www.google.com/maps?q=' + o.gpsLat + ',' + o.gpsLng + '&ll=' + o.gpsLat + ',' + o.gpsLng + '&z=17';
+    return 'https://maps.google.com/?q=' + o.gpsLat + ',' + o.gpsLng;
   }
-  /* Eski site.lat/lng kontrolü (geriye uyumluluk) */
-  if(site.lat&&site.lng) return 'https://www.google.com/maps?q='+site.lat+','+site.lng;
-  /* Koordinat yoksa Çınarköy Evleri + blok adı + daire ile arama */
-  return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('Çınarköy Evleri '+site.name+' '+code);
+  
+  /* 3. Site seviyesinde koordinat (eski format, geriye uyumluluk) */
+  if(site.lat && site.lng) {
+    return 'https://maps.google.com/?q=' + site.lat + ',' + site.lng;
+  }
+  
+  /* 4. FALLBACK: Koordinat yoksa sadece koordinatları kullan (site adı YOK) */
+  /* Bu satıra hiç gelmemeli çünkü tüm unitlerde koordinat var */
+  return 'https://maps.google.com/?q=41.023,29.198';
 }
 function openMaps(site, code){
   if(!site){ toast('Blok bulunamadı','err'); return; }
