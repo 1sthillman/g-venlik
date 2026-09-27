@@ -4851,7 +4851,7 @@ const Cam = {
     setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),320); },40);
   },
 
-  /* ---- ULTRA BASIT VE HIZLI OKUMA - Sadece OCR.space ---- */
+  /* ---- MULTI-API OKUMA - Öncelik: Plate Recognizer > OCR.space > API Ninjas ---- */
   async read(raw){
     if(this.busy){
       console.warn('⚠️ Zaten okuma yapılıyor');
@@ -4864,9 +4864,37 @@ const Cam = {
     this.prog(15);
     
     try{
-      /* ==================== OCR.SPACE İLE OKUMA ==================== */
+      /* ==================== 1. PLATE RECOGNIZER (En iyi) ==================== */
+      if(this.plateRecognizerKey){
+        this.status('Plate Recognizer ile analiz ediliyor...');
+        this.prog(25);
+        
+        const prResult = await this.readWithPlateRecognizer(raw);
+        
+        if(prResult && prResult.plate){
+          console.log('✅ Plate Recognizer başarılı:', prResult.plate);
+          this.prog(80);
+          
+          const cands = plateCandidates(prResult.plate, 90);
+          console.log(`📋 ${cands.length} plaka adayı bulundu:`, cands);
+          
+          if(cands.length > 0){
+            this.prog(100);
+            setTimeout(() => { this.progOff(); }, 300);
+            this.busy = false;
+            this.scanning(false);
+            this.rawText = prResult.plate;
+            this.deliver(cands, [prResult.plate], []);
+            return;
+          }
+        }
+        
+        console.warn('⚠️ Plate Recognizer başarısız, OCR.space deneniyor...');
+      }
+      
+      /* ==================== 2. OCR.SPACE (İkinci seçenek) ==================== */
       this.status('OCR.space ile analiz ediliyor...');
-      this.prog(30);
+      this.prog(40);
       
       const ocrSpaceResult = await this.readWithOcrSpace(raw);
       
@@ -4878,7 +4906,6 @@ const Cam = {
         console.log(`📋 ${cands.length} plaka adayı bulundu:`, cands);
         
         if(cands.length > 0){
-          /* BAŞARILI - Sonucu sun */
           this.prog(100);
           setTimeout(() => { this.progOff(); }, 300);
           this.busy = false;
@@ -4886,19 +4913,42 @@ const Cam = {
           this.rawText = ocrSpaceResult.plate;
           this.deliver(cands, [ocrSpaceResult.plate], []);
           return;
-        } else {
-          /* OCR.space metin okudu ama geçerli plaka yok */
-          console.warn('⚠️ OCR.space metin okudu ama geçerli plaka formatı bulunamadı');
-          this.status('Geçerli plaka formatı bulunamadı', true);
-          toast('Plaka okunamadı - Tekrar deneyin veya elle girin', 'warn');
         }
-      } else {
-        /* OCR.space hiç metin okuyamadı */
-        console.warn('❌ OCR.space okuma başarısız');
-        this.status('Plaka okunamadı', true);
-        toast('Plaka okunamadı - Plakayı çerçeveye hizalayıp tekrar deneyin', 'err');
       }
       
+      console.warn('⚠️ OCR.space başarısız, API Ninjas deneniyor...');
+      
+      /* ==================== 3. API NINJAS (Son seçenek) ==================== */
+      if(this.apiNinjasKey){
+        this.status('API Ninjas ile analiz ediliyor...');
+        this.prog(60);
+        
+        const ninjaResult = await this.readWithApiNinjas(raw);
+        
+        if(ninjaResult && ninjaResult.plate){
+          console.log('✅ API Ninjas başarılı:', ninjaResult.plate);
+          this.prog(80);
+          
+          const cands = plateCandidates(ninjaResult.plate, 90);
+          console.log(`📋 ${cands.length} plaka adayı bulundu:`, cands);
+          
+          if(cands.length > 0){
+            this.prog(100);
+            setTimeout(() => { this.progOff(); }, 300);
+            this.busy = false;
+            this.scanning(false);
+            this.rawText = ninjaResult.plate;
+            this.deliver(cands, [ninjaResult.plate], []);
+            return;
+          }
+        }
+      }
+      
+      /* ==================== TÜM API'LER BAŞARISIZ ==================== */
+      console.error('❌ Tüm OCR API\'leri başarısız');
+      this.status('Plaka okunamadı', true);
+      toast('Plaka okunamadı - Plakayı çerçeveye hizalayıp tekrar deneyin', 'err');
+            
     }catch(error){
       /* ==================== HATA YÖNETİMİ ==================== */
       console.error('❌ Okuma hatası:', error);
@@ -4992,11 +5042,11 @@ const Cam = {
     return compressed;
   },
   
-  /* ---- OCR.space API ile okuma (TRIPLE KEY - 75,000/ay) ---- */
+  /* ---- MULTI-OCR API KEYS ---- */
   get ocrApiKeys(){
     // OCR_CONFIG global değişkeninden al (ocr-config.js)
-    if(typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.apiKeys && OCR_CONFIG.apiKeys.length > 0){
-      return OCR_CONFIG.apiKeys;
+    if(typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.ocrSpace && OCR_CONFIG.ocrSpace.apiKeys && OCR_CONFIG.ocrSpace.apiKeys.length > 0){
+      return OCR_CONFIG.ocrSpace.apiKeys;
     }
     
     // Config yok - kullanıcı kendi key'lerini eklemelidir
@@ -5004,8 +5054,23 @@ const Cam = {
     console.error('📝 Çözüm: cp ocr-config.example.js ocr-config.js');
     console.error('🔑 API key almak için: https://ocr.space/ocrapi');
     
-    return []; // Boş array - OCR çalışmayacak, Tesseract devreye girecek
+    return []; // Boş array - OCR çalışmayacak
   },
+  
+  get plateRecognizerKey(){
+    if(typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.plateRecognizer && OCR_CONFIG.plateRecognizer.apiKey){
+      return OCR_CONFIG.plateRecognizer.apiKey;
+    }
+    return null;
+  },
+  
+  get apiNinjasKey(){
+    if(typeof OCR_CONFIG !== 'undefined' && OCR_CONFIG.apiNinjas && OCR_CONFIG.apiNinjas.apiKey){
+      return OCR_CONFIG.apiNinjas.apiKey;
+    }
+    return null;
+  },
+  
   currentKeyIndex: 0,
   keyFailCount: {}, // Her key için başarısızlık sayacı
   apiRequestInProgress: false, // Race condition önleme
@@ -5274,6 +5339,222 @@ const Cam = {
       }
       
       this.apiRequestInProgress = false;
+      return null;
+    }
+  },
+  
+  /* ==================== PLATE RECOGNIZER API ==================== */
+  async readWithPlateRecognizer(canvas, retryCount = 0){
+    if(!this.plateRecognizerKey){
+      console.warn('Plate Recognizer API key yok');
+      return null;
+    }
+    
+    if(!navigator.onLine){
+      console.error('❌ İnternet bağlantısı yok');
+      return null;
+    }
+    
+    try{
+      this.status('Plaka bölgesi tespit ediliyor...');
+      
+      const croppedCanvas = this.smartCropPlateRegion(canvas);
+      
+      this.status('Plate Recognizer ile okunuyor...');
+      
+      /* Canvas'ı JPEG blob'a çevir */
+      let quality = 0.85;
+      let blob = await new Promise(resolve => {
+        croppedCanvas.toBlob(resolve, 'image/jpeg', quality);
+      });
+      
+      /* 1MB kontrolü */
+      while(blob.size > 1000000 && quality > 0.5){
+        quality -= 0.05;
+        blob = await new Promise(resolve => {
+          croppedCanvas.toBlob(resolve, 'image/jpeg', quality);
+        });
+      }
+      
+      console.log(`Plate Recognizer: ${(blob.size/1024).toFixed(0)}KB, kalite=${quality.toFixed(2)}`);
+      
+      if(blob.size > 300000){
+        this.status('Görüntü yükleniyor... (bu birkaç saniye sürebilir)');
+      }
+      
+      /* API İsteği */
+      const formData = new FormData();
+      formData.append('upload', blob, 'plaka.jpg');
+      formData.append('regions', 'tr'); // Türkiye plaka formatı
+      
+      const controller = new AbortController();
+      const timeout = OCR_CONFIG.timeouts?.plateRecognizer || 25000;
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      let response;
+      try {
+        response = await fetch('https://api.platerecognizer.com/v1/plate-reader/', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Token ' + this.plateRecognizerKey
+          },
+          body: formData,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+      } catch(fetchError) {
+        clearTimeout(timeoutId);
+        
+        if(fetchError.name === 'AbortError'){
+          console.error('Plate Recognizer timeout');
+          toast('Plate Recognizer yanıt vermiyor', 'warn');
+          return null;
+        }
+        
+        throw fetchError;
+      }
+      
+      if(!response.ok){
+        console.warn(`Plate Recognizer HTTP ${response.status}`);
+        
+        if(response.status === 429){
+          toast('Plate Recognizer günlük limit aşıldı', 'warn');
+        }
+        
+        return null;
+      }
+      
+      const data = await response.json();
+      
+      if(data.results && data.results.length > 0){
+        const result = data.results[0];
+        const plate = result.plate || '';
+        const confidence = (result.score || 0) * 100;
+        
+        if(plate.length >= 5){
+          let cleaned = this.filterPlateText(plate);
+          
+          console.log(`Plate Recognizer HAM: "${plate}"`);
+          console.log(`Plate Recognizer FİLTRELİ: "${cleaned}" (güven: ${confidence.toFixed(0)}%)`);
+          
+          if(cleaned.length >= 5){
+            return { plate: cleaned, raw: plate, confidence };
+          }
+        }
+      }
+      
+      console.warn('Plate Recognizer sonuç bulunamadı');
+      return null;
+      
+    }catch(e){
+      console.error('Plate Recognizer hatası:', e.message);
+      return null;
+    }
+  },
+  
+  /* ==================== API NINJAS IMAGE-TO-TEXT ==================== */
+  async readWithApiNinjas(canvas, retryCount = 0){
+    if(!this.apiNinjasKey){
+      console.warn('API Ninjas key yok');
+      return null;
+    }
+    
+    if(!navigator.onLine){
+      console.error('❌ İnternet bağlantısı yok');
+      return null;
+    }
+    
+    try{
+      this.status('Plaka bölgesi tespit ediliyor...');
+      
+      const croppedCanvas = this.smartCropPlateRegion(canvas);
+      
+      this.status('API Ninjas ile okunuyor...');
+      
+      /* Canvas'ı JPEG blob'a çevir */
+      let quality = 0.80;
+      let blob = await new Promise(resolve => {
+        croppedCanvas.toBlob(resolve, 'image/jpeg', quality);
+      });
+      
+      /* 500KB kontrolü */
+      while(blob.size > 500000 && quality > 0.4){
+        quality -= 0.05;
+        blob = await new Promise(resolve => {
+          croppedCanvas.toBlob(resolve, 'image/jpeg', quality);
+        });
+      }
+      
+      console.log(`API Ninjas: ${(blob.size/1024).toFixed(0)}KB, kalite=${quality.toFixed(2)}`);
+      
+      if(blob.size > 300000){
+        this.status('Görüntü yükleniyor...');
+      }
+      
+      /* API İsteği */
+      const formData = new FormData();
+      formData.append('image', blob, 'plaka.jpg');
+      
+      const controller = new AbortController();
+      const timeout = OCR_CONFIG.timeouts?.apiNinjas || 20000;
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      let response;
+      try {
+        response = await fetch('https://api.api-ninjas.com/v1/imagetotext', {
+          method: 'POST',
+          headers: {
+            'X-Api-Key': this.apiNinjasKey
+          },
+          body: formData,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+      } catch(fetchError) {
+        clearTimeout(timeoutId);
+        
+        if(fetchError.name === 'AbortError'){
+          console.error('API Ninjas timeout');
+          toast('API Ninjas yanıt vermiyor', 'warn');
+          return null;
+        }
+        
+        throw fetchError;
+      }
+      
+      if(!response.ok){
+        console.warn(`API Ninjas HTTP ${response.status}`);
+        
+        if(response.status === 429){
+          toast('API Ninjas günlük limit aşıldı', 'warn');
+        }
+        
+        return null;
+      }
+      
+      const data = await response.json();
+      
+      if(Array.isArray(data) && data.length > 0){
+        /* API Ninjas dönen array'deki tüm text'leri birleştir */
+        const allText = data.map(item => item.text || '').join(' ');
+        
+        if(allText.length > 0){
+          let cleaned = this.filterPlateText(allText);
+          
+          console.log(`API Ninjas HAM: "${allText}"`);
+          console.log(`API Ninjas FİLTRELİ: "${cleaned}"`);
+          
+          if(cleaned.length >= 5){
+            return { plate: cleaned, raw: allText, confidence: 75 };
+          }
+        }
+      }
+      
+      console.warn('API Ninjas sonuç bulunamadı');
+      return null;
+      
+    }catch(e){
+      console.error('API Ninjas hatası:', e.message);
       return null;
     }
   },
