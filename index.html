@@ -4851,7 +4851,7 @@ const Cam = {
     setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),320); },40);
   },
 
-  /* ---- MULTI-API OKUMA - Öncelik: Plate Recognizer > OCR.space > API Ninjas ---- */
+  /* ---- MULTI-API OKUMA - Öncelik: API Ninjas > OCR.space > Plate Recognizer ---- */
   async read(raw){
     if(this.busy){
       console.warn('⚠️ Zaten okuma yapılıyor');
@@ -4864,18 +4864,19 @@ const Cam = {
     this.prog(15);
     
     try{
-      /* ==================== 1. PLATE RECOGNIZER (En iyi) ==================== */
-      if(this.plateRecognizerKey){
-        this.status('Plate Recognizer ile analiz ediliyor...');
+      /* ==================== 1. API NINJAS (En stabil) ==================== */
+      const ninjaKeys = this.apiNinjasKey;
+      if(ninjaKeys && ninjaKeys.length > 0){
+        this.status('API Ninjas ile analiz ediliyor...');
         this.prog(25);
         
-        const prResult = await this.readWithPlateRecognizer(raw);
+        const ninjaResult = await this.readWithApiNinjas(raw);
         
-        if(prResult && prResult.plate){
-          console.log('✅ Plate Recognizer başarılı:', prResult.plate);
+        if(ninjaResult && ninjaResult.plate){
+          console.log('✅ API Ninjas başarılı:', ninjaResult.plate);
           this.prog(80);
           
-          const cands = plateCandidates(prResult.plate, 90);
+          const cands = plateCandidates(ninjaResult.plate, 90);
           console.log(`📋 ${cands.length} plaka adayı bulundu:`, cands);
           
           if(cands.length > 0){
@@ -4883,13 +4884,13 @@ const Cam = {
             setTimeout(() => { this.progOff(); }, 300);
             this.busy = false;
             this.scanning(false);
-            this.rawText = prResult.plate;
-            this.deliver(cands, [prResult.plate], []);
+            this.rawText = ninjaResult.plate;
+            this.deliver(cands, [ninjaResult.plate], []);
             return;
           }
         }
         
-        console.warn('⚠️ Plate Recognizer başarısız, OCR.space deneniyor...');
+        console.warn('⚠️ API Ninjas başarısız, OCR.space deneniyor...');
       }
       
       /* ==================== 2. OCR.SPACE (İkinci seçenek) ==================== */
@@ -4916,20 +4917,21 @@ const Cam = {
         }
       }
       
-      console.warn('⚠️ OCR.space başarısız, API Ninjas deneniyor...');
+      console.warn('⚠️ OCR.space başarısız, Plate Recognizer deneniyor...');
       
-      /* ==================== 3. API NINJAS (Son seçenek) ==================== */
-      if(this.apiNinjasKey){
-        this.status('API Ninjas ile analiz ediliyor...');
+      /* ==================== 3. PLATE RECOGNIZER (Son şans - genelde 403) ==================== */
+      const plateKeys = this.plateRecognizerKey;
+      if(plateKeys && plateKeys.length > 0){
+        this.status('Plate Recognizer ile analiz ediliyor...');
         this.prog(60);
         
-        const ninjaResult = await this.readWithApiNinjas(raw);
+        const prResult = await this.readWithPlateRecognizer(raw);
         
-        if(ninjaResult && ninjaResult.plate){
-          console.log('✅ API Ninjas başarılı:', ninjaResult.plate);
+        if(prResult && prResult.plate){
+          console.log('✅ Plate Recognizer başarılı:', prResult.plate);
           this.prog(80);
           
-          const cands = plateCandidates(ninjaResult.plate, 90);
+          const cands = plateCandidates(prResult.plate, 90);
           console.log(`📋 ${cands.length} plaka adayı bulundu:`, cands);
           
           if(cands.length > 0){
@@ -4937,8 +4939,8 @@ const Cam = {
             setTimeout(() => { this.progOff(); }, 300);
             this.busy = false;
             this.scanning(false);
-            this.rawText = ninjaResult.plate;
-            this.deliver(cands, [ninjaResult.plate], []);
+            this.rawText = prResult.plate;
+            this.deliver(cands, [prResult.plate], []);
             return;
           }
         }
