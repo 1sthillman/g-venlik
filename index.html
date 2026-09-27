@@ -125,14 +125,18 @@ section.active{ display:block; }
 }
 
 .acc-chev{ 
-  color:var(--muted); 
-  transition:transform .25s; 
-  flex-shrink:0; 
+  transition:transform .3s cubic-bezier(0.34, 1.56, 0.64, 1), filter .2s; 
+  flex-shrink:0;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.3));
+}
+
+.acc-item:hover .acc-chev{
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));
 }
 
 .acc-item.open .acc-chev{ 
-  transform:rotate(180deg); 
-  color:var(--amber); 
+  transform:rotate(180deg) scale(1.1); 
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,.5));
 }
 
 .acc-body{ 
@@ -2755,12 +2759,23 @@ function buildAccordion(){
       +'Ayarlar › Adresler ekranından ekleyebilirsiniz.</span></div>';
     return;
   }
-  list.forEach(site=>{
+  
+  /* Blok renkleri - projeye uyumlu profesyonel palette */
+  const blockColors = [
+    '#FF6B35', '#F7931E', '#FFB700', '#06C270', '#00B8A9', 
+    '#5D3FD3', '#FF006E', '#00A8E8', '#FF5757', '#4FD8C9',
+    '#7B2CBF', '#D90368', '#FF8500', '#6BCF7F', '#FF9F40'
+  ];
+  
+  list.forEach((site, index) => {
     const item=document.createElement('div'); item.className='acc-item';
+    const color = blockColors[index % blockColors.length];
+    
     item.innerHTML='<div class="acc-head"><div><div class="ah-name">'+esc(site.name)+'</div>'
       +'<div class="ah-count">'+esc(site.street||'')+(site.street?' · ':'')+site.units.length+' ünite</div></div>'
-      +'<svg class="acc-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>'
+      +'<svg class="acc-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:'+color+'"><path d="m6 9 6 6 6-6"/></svg></div>'
       +'<div class="acc-body"><div class="acc-body-inner"></div></div>';
+    
     const inner=item.querySelector('.acc-body-inner');
     site.units.forEach(u=>{
       const c=document.createElement('div'); c.className='unit-cell'; c.textContent=u.c;
@@ -2768,7 +2783,20 @@ function buildAccordion(){
       c.onclick=e=>{ e.stopPropagation(); openUnitDetail(site,u.c); };
       inner.appendChild(c);
     });
-    item.querySelector('.acc-head').onclick=()=>{ item.classList.toggle('open'); sfx.tap(); };
+    
+    /* Sadece biri açık - diğerleri kapansın */
+    item.querySelector('.acc-head').onclick=()=>{ 
+      const wasOpen = item.classList.contains('open');
+      
+      /* Tüm açık itemleri kapat */
+      box.querySelectorAll('.acc-item.open').forEach(i => i.classList.remove('open'));
+      
+      /* Eğer kapalıydı, aç */
+      if(!wasOpen) item.classList.add('open');
+      
+      sfx.tap(); 
+    };
+    
     box.appendChild(item);
   });
 }
