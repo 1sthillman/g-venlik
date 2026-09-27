@@ -1,12 +1,6 @@
 # OCR API Keys - GİZLİ TUTULACAK
 ocr-config.js
 
-# Documentation with API keys - GİZLİ TUTULACAK
-OCR_SPACE_ENTEGRASYON_DOKUMANI.md
-GITHUB_PAGES_KURULUM.md
-GITHUB_SECRETS_KURULUM.md
-OCR_ENTEGRASYON_DOKUMANI.md
-
 # Build files
 _build/
 dist/

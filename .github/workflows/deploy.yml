@@ -18,21 +18,60 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Create OCR Config from Secrets
+      - name: Create Multi-OCR Config from Secrets
         run: |
           cat > ocr-config.js << 'EOF'
-          // OCR.space API Configuration - AUTO-GENERATED
+          // Multi-OCR API Configuration - AUTO-GENERATED FROM GITHUB SECRETS
+          // ⚠️ Bu dosya GitHub Actions tarafından otomatik oluşturulur
           const OCR_CONFIG = {
-            apiKeys: [
-              '${{ secrets.OCR_KEY_1 }}',
-              '${{ secrets.OCR_KEY_2 }}',
-              '${{ secrets.OCR_KEY_3 }}'
-            ],
-            apiUrl: 'https://api.ocr.space/parse/image',
-            totalCapacity: {
-              monthly: 75000,
-              daily: 2500,
-              hourly: 104
+            // OCR.space API (Metin tabanlı OCR)
+            ocrSpace: {
+              apiKeys: [
+                '${{ secrets.OCR_KEY_1 }}',
+                '${{ secrets.OCR_KEY_2 }}',
+                '${{ secrets.OCR_KEY_3 }}'
+              ],
+              apiUrl: 'https://api.ocr.space/parse/image',
+              totalCapacity: {
+                monthly: 75000,
+                daily: 2500,
+                hourly: 104
+              }
+            },
+            
+            // API Ninjas - Image-to-Text API
+            apiNinjas: {
+              apiKey: '${{ secrets.API_NINJAS_KEY }}',
+              apiUrl: 'https://api.api-ninjas.com/v1/imagetotext',
+              totalCapacity: {
+                monthly: 50000,
+                daily: 1666,
+                hourly: 69
+              }
+            },
+            
+            // Plate Recognizer API (Özel plaka tanıma)
+            plateRecognizer: {
+              apiKey: '${{ secrets.PLATE_RECOGNIZER_KEY }}',
+              apiUrl: 'https://api.platerecognizer.com/v1/plate-reader/',
+              totalCapacity: {
+                monthly: 2500,
+                daily: 83,
+                hourly: 3
+              }
+            },
+            
+            // Öncelik sırası
+            priority: ['plateRecognizer', 'ocrSpace', 'apiNinjas'],
+            
+            // Fallback stratejisi
+            fallbackEnabled: true,
+            
+            // Timeout ayarları (milisaniye)
+            timeouts: {
+              plateRecognizer: 25000,
+              ocrSpace: 30000,
+              apiNinjas: 20000
             }
           };
           if(typeof window !== 'undefined'){
