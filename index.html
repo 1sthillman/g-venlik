@@ -4768,48 +4768,6 @@ const Cam = {
       }, 1000);
     }
   },
-      }
-      
-      console.log(`Seçilen: "${chosen}" (${confidence}, ${bestCount} oy)`);
-      
-      /* Debug: Seçilen metni kontrol et */
-      if(chosen){
-        console.log(`plateCandidates çağrılıyor: "${chosen}", score: ${confidence === 'high' ? 80 : 40}`);
-      }
-      
-      this.prog(100);
-      
-      /* Sonuçları işle */
-      const texts = results.map(r => r.text).filter(Boolean);
-      const cands = chosen ? plateCandidates(chosen, confidence === 'high' ? 80 : 40) : [];
-      
-      console.log(`plateCandidates sonucu: ${cands.length} aday`, cands);
-      
-      this.rawText = texts.join(' ');
-      
-      setTimeout(() => { this.progOff(); }, 300);
-      this.busy = false;
-      this.scanning(false);
-      
-      this.deliver(cands, texts, []);
-      
-    }catch(e){
-      console.error('Okuma hatası:', e);
-      
-      this.progOff();
-      this.busy = false;
-      this.scanning(false);
-      
-      this.say('Okuma yapılamadı');
-      this.status('Tekrar deneyin veya "Yaz" ile elle girin', true);
-      toast('Okuma başarısız', 'err');
-      
-      setTimeout(() => {
-        toast('Plaka okunamadı - Elle girmek için kalem butonuna tıklayın', 'warn');
-        // Otomatik açma yerine kullanıcıya bilgi ver
-      }, 500);
-    }
-  },
   
   /* ========== AKILLI GÖRSEL SIKIŞTIRMA ========== */
   /* Canvas'ı sıkıştırarak hem OCR doğruluğunu artırır hem de bant genişliği tasarrufu sağlar */
