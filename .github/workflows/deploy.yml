@@ -42,7 +42,7 @@ jobs:
             // API Ninjas - Image-to-Text API
             apiNinjas: {
               apiKeys: [
-                '${{ secrets.API_NINJAS_KEY_1 }}',
+                '${{ secrets.API_NINJAS_KEY }}',
                 '${{ secrets.API_NINJAS_KEY_2 }}'
               ],
               apiUrl: 'https://api.api-ninjas.com/v1/imagetotext',
@@ -56,7 +56,7 @@ jobs:
             // Plate Recognizer API (Özel plaka tanıma)
             plateRecognizer: {
               apiKeys: [
-                '${{ secrets.PLATE_RECOGNIZER_KEY_1 }}',
+                '${{ secrets.PLATE_RECOGNIZER_KEY }}',
                 '${{ secrets.PLATE_RECOGNIZER_KEY_2 }}',
                 '${{ secrets.PLATE_RECOGNIZER_KEY_3 }}'
               ],
