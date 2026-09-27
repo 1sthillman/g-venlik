@@ -4700,146 +4700,74 @@ const Cam = {
     setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),320); },40);
   },
 
-  /* ---- ULTRA BASIT VE HIZLI OKUMA - İki motor: Tesseract + OCR.space ---- */
+  /* ---- ULTRA BASIT VE HIZLI OKUMA - Sadece OCR.space ---- */
   async read(raw){
     if(this.busy){
-      console.warn('Zaten okuma yapılıyor');
+      console.warn('⚠️ Zaten okuma yapılıyor');
       return;
     }
     
     this.busy = true;
     this.scanning(true);
     this.status('Plaka okunuyor…');
-    this.prog(10);
+    this.prog(15);
     
     try{
-      /* ==================== GÖRSEL KONTROLÜ ==================== */
-      /* Boş/beyaz görsel kontrolü - OCR.space'e gereksiz istek atmayalım */
-      const ctx = raw.getContext('2d');
-      const imageData = ctx.getImageData(0, 0, raw.width, raw.height);
-      const data = imageData.data;
+      /* ==================== OCR.SPACE İLE OKUMA ==================== */
+      this.status('OCR.space ile analiz ediliyor...');
+      this.prog(30);
       
-      let totalBrightness = 0;
-      let pixelCount = 0;
+      const ocrSpaceResult = await this.readWithOcrSpace(raw);
       
-      // Her 10 piksel başına bir örnekleme al (performans için)
-      for(let i = 0; i < data.length; i += 40){ // 4 byte * 10 piksel
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        totalBrightness += (r + g + b) / 3;
-        pixelCount++;
-      }
-      
-      const avgBrightness = totalBrightness / pixelCount;
-      
-      // Çok açık (beyaz) veya çok koyu (siyah) görsel - muhtemelen boş
-      if(avgBrightness > 250 || avgBrightness < 5){
-        console.warn('Görsel çok açık veya koyu (avg:', avgBrightness.toFixed(0), ') - OCR.space atlanıyor');
-        toast('Görsel kalitesi düşük - Alternatif motor kullanılıyor', 'warn');
-        // Direkt Tesseract'a git
-      } else {
-        /* OCR.space API ile dene (önce bu, daha hızlı ve doğru) */
-        const ocrSpaceResult = await this.readWithOcrSpace(raw);
+      if(ocrSpaceResult && ocrSpaceResult.plate){
+        console.log('✅ OCR.space başarılı:', ocrSpaceResult.plate);
+        this.prog(80);
         
-        if(ocrSpaceResult && ocrSpaceResult.plate){
-          console.log('OCR.space başarılı:', ocrSpaceResult.plate);
-          
-          const cands = plateCandidates(ocrSpaceResult.plate, 90);
-          console.log(`OCR.space sonucu: ${cands.length} aday`, cands);
-          
-          if(cands.length > 0){
-            this.prog(100);
-            setTimeout(() => { this.progOff(); }, 300);
-            this.busy = false;
-            this.scanning(false);
-            this.rawText = ocrSpaceResult.plate;
-            this.deliver(cands, [ocrSpaceResult.plate], []);
-            return;
-          }
-        }
+        const cands = plateCandidates(ocrSpaceResult.plate, 90);
+        console.log(`📋 ${cands.length} plaka adayı bulundu:`, cands);
         
-        /* OCR.space başarısız - Tesseract'a geç */
-        console.log('OCR.space başarısız, Tesseract kullanılıyor...');
-      }
-      
-      this.status('Alternatif motor kullanılıyor...');
-      
-      /* Tesseract worker hazırla */
-      if(!this.engine){
-        this.status('Okuma motoru hazırlanıyor…');
-        await this.worker(() => {});
-      }
-      
-      this.prog(20);
-      this.status('Fotoğraf işleniyor…');
-      
-      /* PREPROCESSING VARYANTLARI - Basit ve hızlı */
-      const variants = [];
-      const budget = (navigator.hardwareConcurrency || 4) <= 2 ? 2 : 3;
-      
-      try{
-        if(CV_READY){
-          variants.push({ label: 'opencv', canvas: preprocessWithOpenCV(this.cloneCanvas(raw)) });
-          if(budget >= 3){
-            variants.push({ label: 'opencv-light', canvas: preprocessWithOpenCVLight(this.cloneCanvas(raw)) });
-          }
+        if(cands.length > 0){
+          /* BAŞARILI - Sonucu sun */
+          this.prog(100);
+          setTimeout(() => { this.progOff(); }, 300);
+          this.busy = false;
+          this.scanning(false);
+          this.rawText = ocrSpaceResult.plate;
+          this.deliver(cands, [ocrSpaceResult.plate], []);
+          return;
+        } else {
+          /* OCR.space metin okudu ama geçerli plaka yok */
+          console.warn('⚠️ OCR.space metin okudu ama geçerli plaka formatı bulunamadı');
+          this.status('Geçerli plaka formatı bulunamadı', true);
+          toast('Plaka okunamadı - Tekrar deneyin veya elle girin', 'warn');
         }
-      }catch(e){
-        console.warn('OpenCV preprocessing failed:', e);
-      }
-      
-      variants.push({ label: 'basic', canvas: preprocessBasic(this.cloneCanvas(raw)) });
-      
-      /* OKUMA - Her varyantı dene */
-      const results = [];
-      for(let i = 0; i < variants.length; i++){
-        try{
-          this.status(`Okuma ${i+1}/${variants.length}…`);
-          this.prog(20 + (i / variants.length) * 70);
-          
-          const result = await this.engine.recognize(variants[i].canvas);
-          const text = (result && result.data && result.data.text) || '';
-          const conf = (result && result.data && result.data.confidence) || 0;
-          
-          results.push({
-            text: this.normalizePlate(text),
-            conf: conf,
-            label: variants[i].label
-          });
-          
-          console.log(`${variants[i].label}: "${results[i].text}" (${conf.toFixed(1)}%)`);
-          
-        }catch(e){
-          console.warn(`Varyant ${variants[i].label} başarısız:`, e);
-          results.push({ text: '', conf: 0, label: variants[i].label });
-        }
-      }
-      
-      /* OYLAMA - Aynı sonuç birden fazla varyantda çıktıysa güvenilir */
-      const counts = {};
-      results.forEach(r => {
-        if(r.text) counts[r.text] = (counts[r.text] || 0) + 1;
-      });
-      
-      let bestText = '', bestCount = 0;
-      Object.keys(counts).forEach(t => {
-        if(counts[t] > bestCount){
-          bestCount = counts[t];
-          bestText = t;
-        }
-      });
-      
-      let chosen, confidence;
-      if(bestCount >= 2){
-        /* Aynı sonuç 2+ kerede - yüksek güven */
-        chosen = bestText;
-        confidence = 'high';
       } else {
-        /* En yüksek confidence'lı sonuç */
-        const sorted = results.slice().sort((a, b) => b.conf - a.conf);
-        chosen = sorted[0] ? sorted[0].text : '';
-        confidence = chosen ? 'low' : 'none';
+        /* OCR.space hiç metin okuyamadı */
+        console.warn('❌ OCR.space okuma başarısız');
+        this.status('Plaka okunamadı', true);
+        toast('Plaka okunamadı - Plakayı çerçeveye hizalayıp tekrar deneyin', 'err');
+      }
+      
+    }catch(error){
+      /* ==================== HATA YÖNETİMİ ==================== */
+      console.error('❌ Okuma hatası:', error);
+      this.status('Okuma başarısız: ' + (error.message || 'Bilinmeyen hata'), true);
+      toast('Bir hata oluştu - Lütfen tekrar deneyin', 'err');
+      
+    }finally{
+      /* ==================== STATE RESET ==================== */
+      this.busy = false;
+      this.scanning(false);
+      this.progOff();
+      
+      /* Okuma sonrası - kamera önizlemeye dön */
+      setTimeout(() => {
+        if(!this.result){
+          this.status('Plakayı çerçeveye hizalayın');
+        }
+      }, 1000);
+    }
+  },
       }
       
       console.log(`Seçilen: "${chosen}" (${confidence}, ${bestCount} oy)`);
@@ -5141,62 +5069,60 @@ const Cam = {
   },
   
   /* ========== AKILLI PLAKA BÖLGE KIRPMA ========== */
-  /* Sadece plaka bölgesini kırpar - çerçeve, logo, TR yazısını atar */
+  /* Hem araç hem motosiklet plakası için optimize kırpma */
   smartCropPlateRegion(canvas){
-    const ctx = canvas.getContext('2d');
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imgData.data;
     const w = canvas.width;
     const h = canvas.height;
     
-    /* Satır yoğunluk analizi - plaka hangi satırda? */
-    const rowDensity = new Uint32Array(h);
-    for(let y = 0; y < h; y++){
-      let edges = 0;
-      for(let x = 1; x < w; x++){
-        const i = (y * w + x) * 4;
-        const prev = data[i - 4];
-        const curr = data[i];
-        if(Math.abs(curr - prev) > 30) edges++;
-      }
-      rowDensity[y] = edges;
+    console.log(`🔍 Plaka bölgesi tespit ediliyor: ${w}x${h}`);
+    
+    /* ===== KULLANICI ÇERÇEVESİNİ KULLAN ===== */
+    /* Kullanıcı zaten çerçeve ile alanı belirledi */
+    let top, height, left, width;
+    
+    if(this.cropArea && this.cropArea.height > 0){
+      /* Kullanıcı çerçevesi var - onu kullan */
+      top = Math.floor((this.cropArea.top / 100) * h);
+      height = Math.floor((this.cropArea.height / 100) * h);
+      left = 0;
+      width = w;
+      
+      console.log(`✅ Kullanıcı çerçevesi: top=${top}px, height=${height}px`);
+    } else {
+      /* Çerçeve yok - geniş merkez alan al */
+      top = Math.floor(h * 0.25);
+      height = Math.floor(h * 0.50);
+      left = 0;
+      width = w;
+      
+      console.log(`📏 Varsayılan alan: top=${top}px, height=${height}px`);
     }
     
-    /* En yoğun bölgeyi bul (plaka genelde merkezdedir) */
-    let maxDensity = 0;
-    let centerY = Math.floor(h / 2);
-    for(let y = Math.floor(h * 0.2); y < Math.floor(h * 0.8); y++){
-      if(rowDensity[y] > maxDensity){
-        maxDensity = rowDensity[y];
-        centerY = y;
-      }
-    }
+    /* Minimum boyut kontrolü */
+    if(height < 100) height = Math.min(h, 150);
+    if(width < 300) width = Math.min(w, 500);
     
-    /* Plaka boyutları - DAHA BÜYÜK kırpma (OCR için önemli) */
-    const plateHeight = Math.max(100, Math.floor(h * 0.35)); // Minimum 100px, maksimum %35
-    const plateWidth = Math.max(300, Math.floor(w * 0.75));  // Minimum 300px, maksimum %75
+    /* Sınır kontrolü */
+    if(top + height > h) top = Math.max(0, h - height);
+    if(left + width > w) left = Math.max(0, w - width);
     
-    /* Merkezi plaka bölgesi */
-    const top = Math.max(0, Math.min(h - plateHeight, centerY - Math.floor(plateHeight / 2)));
-    const left = Math.max(0, Math.floor((w - plateWidth) / 2));
-    
-    /* Kırpılmış canvas oluştur */
+    /* ===== KIRP VE OPTİMİZE ET ===== */
     const cropped = document.createElement('canvas');
-    cropped.width = plateWidth;
-    cropped.height = plateHeight;
+    cropped.width = width;
+    cropped.height = height;
     const croppedCtx = cropped.getContext('2d');
     
-    /* Yüksek kaliteli resize */
+    /* Yüksek kaliteli rendering */
     croppedCtx.imageSmoothingEnabled = true;
     croppedCtx.imageSmoothingQuality = 'high';
     
-    croppedCtx.drawImage(
+    cropped.drawImage(
       canvas,
-      left, top, plateWidth, plateHeight,
-      0, 0, plateWidth, plateHeight
+      left, top, width, height,
+      0, 0, width, height
     );
     
-    console.log(`Plaka bölgesi kırpıldı: ${w}x${h} → ${plateWidth}x${plateHeight} (y:${top})`);
+    console.log(`✂️ Kırpıldı: ${w}x${h} → ${width}x${height}`);
     
     return cropped;
   },
